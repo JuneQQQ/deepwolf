@@ -5,6 +5,9 @@ night/day cycle, validates every agent decision and decides the winner. It
 never reasons about the game — that is the agents' job. Any decision an agent
 returns that is illegal is quietly replaced with a random legal one, so a
 buggy or hallucinating agent can never corrupt a game.
+
+All player-facing event text is produced through a :class:`~deepwolf.i18n.
+Translator`, so a game can be run in any supported language.
 """
 
 from __future__ import annotations
@@ -23,6 +26,7 @@ from deepwolf.game.state import (
     PlayerView,
     build_view,
 )
+from deepwolf.i18n import Translator
 
 if TYPE_CHECKING:
     from deepwolf.agents.base import Agent
@@ -44,6 +48,7 @@ class GameEngine:
         self.agent_factory = agent_factory
         self.observer = observer
         self.state = GameState.new(config)
+        self.tr = Translator(config.lang)
         self.agents: dict[int, Agent] = {}
 
     # ------------------------------------------------------------------ run
@@ -73,17 +78,19 @@ class GameEngine:
         s = self.state
         roster = ", ".join(str(p) for p in s.players)
         role_counts = _role_count_map(s.players)
-        summary = ", ".join(f"{n}x {role}" for role, n in sorted(role_counts.items()))
+        summary = ", ".join(
+            f"{n}x {self.tr.role_name(role)}"
+            for role, n in sorted(role_counts.items())
+        )
         self._emit(Event(
             EventType.GAME_START, 0, "setup",
-            f"A game of werewolf begins. Players: {roster}. "
-            f"Roles in play: {summary}.",
+            self.tr.t("game_start", roster=roster, roles=summary),
             data={"role_counts": role_counts, "n_players": len(s.players)},
         ))
         for p in s.players:
             self._emit(Event(
                 EventType.ROLE_ASSIGNED, 0, "setup",
-                f"You are the {p.role.value}.",
+                self.tr.t("role_assigned", role=self.tr.role_name(p.role)),
                 public=False, visible_to=frozenset({p.id}),
                 data={"role": p.role.value},
             ))
@@ -91,7 +98,7 @@ class GameEngine:
         for wolf_id in pack:
             self._emit(Event(
                 EventType.PACK_REVEAL, 0, "setup",
-                "You recognise your fellow werewolves.",
+                self.tr.t("pack_reveal"),
                 public=False, visible_to=frozenset({wolf_id}),
                 data={"pack": pack},
             ))
@@ -103,7 +110,7 @@ class GameEngine:
         s.phase = Phase.NIGHT
         self._emit(Event(
             EventType.NIGHT_FALLS, s.day, "night",
-            f"Night {s.day} falls. The village sleeps.",
+            self.tr.t("night_falls", day=s.day),
         ))
 
         victim = self._werewolf_target()
@@ -122,8 +129,7 @@ class GameEngine:
             saved = victim is not None and (victim == protected or healed)
             self._emit(Event(
                 EventType.QUIET_NIGHT, s.day, "night",
-                "The village wakes to find everyone alive."
-                + (" Someone was watched over in the dark." if saved else ""),
+                self.tr.t("quiet_night_saved" if saved else "quiet_night"),
             ))
             return
         self._announce_deaths(deaths)
@@ -135,12 +141,16 @@ class GameEngine:
             if not s.player(pid).alive:
                 continue  # already taken by an earlier death this night
             self._kill(pid, cause)
-            reveal = self._role_reveal(pid)
+            role_name, data = self._reveal(pid)
+            if role_name is not None:
+                text = self.tr.t(
+                    "death_announced_revealed", who=self._who(pid), role=role_name
+                )
+            else:
+                text = self.tr.t("death_announced", who=self._who(pid))
             self._emit(Event(
-                EventType.DEATH_ANNOUNCED, s.day, "night",
-                f"At dawn the village finds {s.name(pid)} (P{pid}) dead."
-                + reveal[0],
-                target=pid, data=reveal[1],
+                EventType.DEATH_ANNOUNCED, s.day, "night", text,
+                target=pid, data=data,
             ))
             self._process_hunter(pid)
 
@@ -158,7 +168,7 @@ class GameEngine:
         pack_ids = frozenset(w.id for w in wolves)
         self._emit(Event(
             EventType.WEREWOLF_TARGET, s.day, "night",
-            f"The pack marks {s.name(victim)} (P{victim}) for death.",
+            self.tr.t("werewolf_target", who=self._who(victim)),
             target=victim, public=False, visible_to=pack_ids,
         ))
         return victim
@@ -172,10 +182,10 @@ class GameEngine:
         legal = [pid for pid in s.living_ids() if pid != seer.id]
         target = self._ask_target(seer, "inspect", legal)
         is_wolf = s.player(target).role is Role.WEREWOLF
-        verdict = "a werewolf" if is_wolf else "not a werewolf"
+        verdict = self.tr.t("verdict_wolf" if is_wolf else "verdict_clear")
         self._emit(Event(
             EventType.SEER_RESULT, s.day, "night",
-            f"Your inspection reveals {s.name(target)} (P{target}) is {verdict}.",
+            self.tr.t("seer_result", who=self._who(target), verdict=verdict),
             target=target, public=False, visible_to=frozenset({seer.id}),
             data={"is_wolf": is_wolf},
         ))
@@ -189,7 +199,7 @@ class GameEngine:
         target = self._ask_target(doctor, "protect", s.living_ids())
         self._emit(Event(
             EventType.DOCTOR_PROTECT, s.day, "night",
-            f"You watch over {s.name(target)} (P{target}) tonight.",
+            self.tr.t("doctor_protect", who=self._who(target)),
             target=target, public=False, visible_to=frozenset({doctor.id}),
         ))
         return target
@@ -209,7 +219,7 @@ class GameEngine:
         if victim is not None:
             self._emit(Event(
                 EventType.WITCH_NIGHT_INFO, s.day, "night",
-                f"The werewolves attacked {s.name(victim)} (P{victim}) tonight.",
+                self.tr.t("witch_night_info", who=self._who(victim)),
                 target=victim, public=False, visible_to=frozenset({witch.id}),
             ))
         view = build_view(s, witch.id, Phase.NIGHT)
@@ -226,7 +236,7 @@ class GameEngine:
             healed = True
             self._emit(Event(
                 EventType.WITCH_POTION, s.day, "night",
-                f"You use your healing potion on {s.name(victim)} (P{victim}).",
+                self.tr.t("witch_heal", who=self._who(victim)),
                 target=victim, public=False, visible_to=frozenset({witch.id}),
                 data={"potion": "heal"},
             ))
@@ -241,7 +251,7 @@ class GameEngine:
             poison_target = poison
             self._emit(Event(
                 EventType.WITCH_POTION, s.day, "night",
-                f"You use your poison potion on {s.name(poison)} (P{poison}).",
+                self.tr.t("witch_poison", who=self._who(poison)),
                 target=poison, public=False, visible_to=frozenset({witch.id}),
                 data={"potion": "poison"},
             ))
@@ -253,7 +263,7 @@ class GameEngine:
         s.phase = Phase.DAY_DISCUSSION
         self._emit(Event(
             EventType.DAY_BREAKS, s.day, "day",
-            f"Day {s.day}: the village gathers to debate.",
+            self.tr.t("day_breaks", day=s.day),
         ))
         for _ in range(self.config.discussion_rounds):
             for pid in s.living_ids():
@@ -268,17 +278,19 @@ class GameEngine:
         lynched = _plurality_or_none(tally)
         if lynched is None:
             self._emit(Event(
-                EventType.NO_LYNCH, s.day, "day",
-                "The vote is split. Nobody is lynched today.",
+                EventType.NO_LYNCH, s.day, "day", self.tr.t("no_lynch"),
             ))
         else:
             self._kill(lynched, "lynched by the village")
-            reveal = self._role_reveal(lynched)
+            role_name, data = self._reveal(lynched)
+            if role_name is not None:
+                text = self.tr.t(
+                    "lynch_revealed", who=self._who(lynched), role=role_name
+                )
+            else:
+                text = self.tr.t("lynch", who=self._who(lynched))
             self._emit(Event(
-                EventType.LYNCH, s.day, "day",
-                f"The village votes to lynch {s.name(lynched)} (P{lynched})."
-                + reveal[0],
-                target=lynched, data=reveal[1],
+                EventType.LYNCH, s.day, "day", text, target=lynched, data=data,
             ))
             self._process_hunter(lynched)
 
@@ -294,7 +306,7 @@ class GameEngine:
             text = text[:797] + "..."
         self._emit(Event(
             EventType.STATEMENT, s.day, "day",
-            f"{s.name(player_id)} (P{player_id}): {text}",
+            f"{self._who(player_id)}: {text}",
             actor=player_id, data={"statement": text},
         ))
 
@@ -305,13 +317,16 @@ class GameEngine:
         choice = self._validate(self.agents[player_id].vote, view, legal)
         self._emit(Event(
             EventType.VOTE_CAST, s.day, "day",
-            f"{s.name(player_id)} (P{player_id}) votes for "
-            f"{s.name(choice)} (P{choice}).",
+            self.tr.t("vote_cast", voter=self._who(player_id), target=self._who(choice)),
             actor=player_id, target=choice,
         ))
         return choice
 
     # ------------------------------------------------------------- helpers
+    def _who(self, player_id: int) -> str:
+        """A player's display name — ``Name (P0)`` — the same in every language."""
+        return f"{self.state.name(player_id)} (P{player_id})"
+
     def _ask_target(self, actor: Player, action: str, legal: list[int]) -> int:
         view = build_view(self.state, actor.id, Phase.NIGHT)
         return self._validate(self.agents[actor.id].night_action, view, legal)
@@ -337,12 +352,15 @@ class GameEngine:
         player.death_day = self.state.day
         player.death_cause = cause
 
-    def _role_reveal(self, player_id: int) -> tuple[str, dict]:
-        """Optional public role reveal appended to a death event."""
+    def _reveal(self, player_id: int) -> tuple[str | None, dict]:
+        """Role reveal for a death event: (localised role name, event data).
+
+        Returns ``(None, {})`` when role reveal on death is disabled.
+        """
         if not self.config.reveal_role_on_death:
-            return "", {}
+            return None, {}
         role = self.state.player(player_id).role
-        return f" They were the {role.value}.", {"role": role.value}
+        return self.tr.role_name(role), {"role": role.value}
 
     def _process_hunter(self, player_id: int) -> None:
         """If the player who just died is the Hunter, fire their revenge shot.
@@ -365,12 +383,19 @@ class GameEngine:
         if choice not in targets:
             choice = s.rng.choice(targets)
         self._kill(choice, "shot by the dying Hunter")
-        reveal = self._role_reveal(choice)
+        role_name, data = self._reveal(choice)
+        if role_name is not None:
+            text = self.tr.t(
+                "hunter_shot_revealed",
+                who=self._who(player_id), target=self._who(choice), role=role_name,
+            )
+        else:
+            text = self.tr.t(
+                "hunter_shot", who=self._who(player_id), target=self._who(choice)
+            )
         self._emit(Event(
-            EventType.HUNTER_SHOT, s.day, s.phase.value,
-            f"With their dying breath, {s.name(player_id)} (P{player_id}) "
-            f"shoots {s.name(choice)} (P{choice})." + reveal[0],
-            actor=player_id, target=choice, data=reveal[1],
+            EventType.HUNTER_SHOT, s.day, s.phase.value, text,
+            actor=player_id, target=choice, data=data,
         ))
         self._process_hunter(choice)  # a shot Hunter shoots back
 
@@ -382,8 +407,10 @@ class GameEngine:
         self.state.phase = Phase.GAME_OVER
         self._emit(Event(
             EventType.GAME_OVER, self.state.day, "end",
-            f"The game is over after {self.state.day} day(s). "
-            f"{winner.label} win.",
+            self.tr.t(
+                "game_over",
+                day=self.state.day, faction=self.tr.faction_label(winner),
+            ),
             data={"winner": winner.value},
         ))
         return True
@@ -396,7 +423,7 @@ class GameEngine:
         s.phase = Phase.GAME_OVER
         self._emit(Event(
             EventType.GAME_OVER, s.day, "end",
-            f"The game reaches the day limit. {s.winner.label} win on headcount.",
+            self.tr.t("game_over_headcount", faction=self.tr.faction_label(s.winner)),
             data={"winner": s.winner.value},
         ))
 

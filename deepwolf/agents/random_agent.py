@@ -10,13 +10,22 @@ from __future__ import annotations
 from deepwolf.agents.base import Agent
 from deepwolf.game.state import PlayerView
 
-_FILLER = [
-    "I don't have anything solid yet. Let's hear from the others.",
-    "Hard to read this table. I'll keep watching.",
-    "Someone here is lying, but I can't prove who.",
-    "I'm keeping my vote open for now.",
-    "We should focus on whoever is being too quiet.",
-]
+_FILLER = {
+    "en": [
+        "I don't have anything solid yet. Let's hear from the others.",
+        "Hard to read this table. I'll keep watching.",
+        "Someone here is lying, but I can't prove who.",
+        "I'm keeping my vote open for now.",
+        "We should focus on whoever is being too quiet.",
+    ],
+    "zh": [
+        "我暂时还没有确凿的判断，先听听其他人怎么说。",
+        "这场局有点难读，我再观察观察。",
+        "这里有人在撒谎，但我还说不出是谁。",
+        "我的票暂时先留着。",
+        "我们该重点关注那些发言太少的人。",
+    ],
+}
 
 
 class RandomAgent(Agent):
@@ -31,7 +40,7 @@ class RandomAgent(Agent):
         return view.rng.choice(self._pool(view))
 
     def speak(self, view: PlayerView) -> str:
-        return view.rng.choice(_FILLER)
+        return view.rng.choice(_FILLER.get(view.lang, _FILLER["en"]))
 
     def witch_turn(
         self, view: PlayerView, victim: int | None, can_heal: bool, can_poison: bool
