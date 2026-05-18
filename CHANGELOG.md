@@ -6,8 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Hunter role** ([#1](https://github.com/JuneQQQ/deepwolf/issues/1)) — a
+  villager who, the moment they die (lynched or killed at night), takes one
+  living player down with them. Chained Hunter deaths resolve correctly, and
+  the copilot treats a Hunter's victim as a confirmed role.
+
 ### Planned
-- Additional roles: Witch, Hunter, Cupid.
+- Additional roles: Witch, Cupid.
 - JSON transcript export for completed games.
 - A model leaderboard built from arena runs.
 

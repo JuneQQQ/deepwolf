@@ -38,3 +38,13 @@ class Agent(ABC):
     @abstractmethod
     def vote(self, view: PlayerView) -> int:
         """Return the player id this agent votes to lynch."""
+
+    def dying_shot(self, view: PlayerView) -> int:
+        """Return a player id to take down with a dying Hunter's revenge.
+
+        Only called when this agent's Hunter has just died. The default is a
+        random living player; LLM and human agents override it. It is concrete,
+        not abstract, so existing agents need no change.
+        """
+        pool = view.others_alive() or list(view.living_ids)
+        return view.rng.choice(pool)

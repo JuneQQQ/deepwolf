@@ -119,6 +119,7 @@ class GameEngine:
                 + reveal[0],
                 target=victim, data=reveal[1],
             ))
+            self._process_hunter(victim)
         else:
             saved = protected is not None and protected == victim
             self._emit(Event(
@@ -210,6 +211,7 @@ class GameEngine:
                 + reveal[0],
                 target=lynched, data=reveal[1],
             ))
+            self._process_hunter(lynched)
 
     def _collect_statement(self, player_id: int) -> None:
         s = self.state
@@ -272,6 +274,36 @@ class GameEngine:
             return "", {}
         role = self.state.player(player_id).role
         return f" They were the {role.value}.", {"role": role.value}
+
+    def _process_hunter(self, player_id: int) -> None:
+        """If the player who just died is the Hunter, fire their revenge shot.
+
+        The shot is resolved immediately and may itself kill another Hunter, so
+        the method recurses. Win conditions are re-checked by the phase loop
+        once the whole chain has resolved.
+        """
+        s = self.state
+        if s.player(player_id).role is not Role.HUNTER:
+            return
+        targets = s.living_ids()
+        if not targets:
+            return
+        view = build_view(s, player_id, s.phase)
+        try:
+            choice = self.agents[player_id].dying_shot(view)
+        except Exception:  # noqa: BLE001 - an agent error must not crash a game
+            choice = -1
+        if choice not in targets:
+            choice = s.rng.choice(targets)
+        self._kill(choice, "shot by the dying Hunter")
+        reveal = self._role_reveal(choice)
+        self._emit(Event(
+            EventType.HUNTER_SHOT, s.day, s.phase.value,
+            f"With their dying breath, {s.name(player_id)} (P{player_id}) "
+            f"shoots {s.name(choice)} (P{choice})." + reveal[0],
+            actor=player_id, target=choice, data=reveal[1],
+        ))
+        self._process_hunter(choice)  # a shot Hunter shoots back
 
     def _check_winner(self) -> bool:
         winner = _winner(self.state)

@@ -225,7 +225,11 @@ def _confirmed_roles(view: PlayerView) -> dict[int, Faction]:
             confirmed[e.target] = (
                 Faction.WEREWOLVES if e.data.get("is_wolf") else Faction.VILLAGE
             )
-        elif e.type in (EventType.DEATH_ANNOUNCED, EventType.LYNCH):
+        elif e.type in (
+            EventType.DEATH_ANNOUNCED,
+            EventType.LYNCH,
+            EventType.HUNTER_SHOT,
+        ):
             role = e.data.get("role")
             if role is not None and e.target is not None:
                 confirmed[e.target] = Role(role).faction

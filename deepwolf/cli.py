@@ -117,6 +117,12 @@ class HumanAgent(Agent):
         _show_copilot(self.console, advise(view, self.copilot))
         return self._ask(view, view.others_alive(), "Who do you vote to lynch?")
 
+    def dying_shot(self, view: PlayerView) -> int:
+        self._banner(view, "DYING SHOT")
+        _show_copilot(self.console, advise(view, self.copilot))
+        pool = view.others_alive() or list(view.living_ids)
+        return self._ask(view, pool, "You are the dying Hunter — who do you shoot?")
+
     def _banner(self, view: PlayerView, phase: str) -> None:
         self.console.rule(f"You are {view.me_name} (P{view.me_id}) — {view.me_role.value} — {phase}")
         for note in view.private_notes:
@@ -226,6 +232,7 @@ _STYLE = {
     EventType.DAY_BREAKS: "yellow",
     EventType.DEATH_ANNOUNCED: "red",
     EventType.LYNCH: "red",
+    EventType.HUNTER_SHOT: "bold red",
     EventType.QUIET_NIGHT: "green",
     EventType.STATEMENT: "white",
     EventType.GAME_OVER: "bold green",
