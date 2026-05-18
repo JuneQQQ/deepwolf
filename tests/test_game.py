@@ -18,6 +18,12 @@ def test_standard_setup_is_balanced():
     assert roles.count(Role.WEREWOLF) == 2
     assert roles.count(Role.SEER) == 1
     assert roles.count(Role.DOCTOR) == 1
+    assert roles.count(Role.HUNTER) == 1
+
+
+def test_small_games_omit_the_special_roles():
+    roles = standard_setup(4)
+    assert roles.count(Role.HUNTER) == 0  # not enough village seats
 
 
 def test_standard_setup_rejects_tiny_games():
@@ -76,3 +82,41 @@ def test_illegal_agent_moves_cannot_corrupt_a_game():
 def test_config_rejects_mismatched_names():
     with pytest.raises(ValueError):
         GameConfig(roles=standard_setup(5), player_names=["only", "two"])
+
+
+def test_hunter_is_a_villager_with_no_night_action():
+    assert Role.HUNTER.faction is Faction.VILLAGE
+    assert Role.HUNTER.has_night_action is False
+
+
+class _FixedVoter(RandomAgent):
+    """Votes for a shared target id so a test can engineer a lynch."""
+
+    target_id = -1
+
+    def vote(self, view):
+        if _FixedVoter.target_id in view.others_alive():
+            return _FixedVoter.target_id
+        return super().vote(view)
+
+
+def test_hunter_fires_a_revenge_shot_on_death():
+    from deepwolf.game.events import EventType
+
+    config = GameConfig(
+        roles=[Role.WEREWOLF, Role.HUNTER, Role.VILLAGER, Role.VILLAGER, Role.VILLAGER],
+        seed=1,
+    )
+    engine = GameEngine(config, lambda pid, _: _FixedVoter(pid))
+    hunter_id = next(p.id for p in engine.state.players if p.role is Role.HUNTER)
+    _FixedVoter.target_id = hunter_id
+
+    result = engine.run()
+
+    shots = [e for e in result.events if e.type is EventType.HUNTER_SHOT]
+    assert shots, "the Hunter died but never fired"
+    shot = shots[0]
+    assert shot.actor == hunter_id
+    # the Hunter's victim must really be dead
+    assert not result.players[shot.target].alive
+    _FixedVoter.target_id = -1

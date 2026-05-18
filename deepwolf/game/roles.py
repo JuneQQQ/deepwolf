@@ -28,6 +28,7 @@ class Role(str, Enum):
     WEREWOLF = "werewolf"
     SEER = "seer"
     DOCTOR = "doctor"
+    HUNTER = "hunter"
 
     @property
     def faction(self) -> Faction:
@@ -60,6 +61,11 @@ _SUMMARIES: dict[Role, str] = {
         "Each night you protect one player; if the werewolves attack that "
         "player they survive. You win with the village."
     ),
+    Role.HUNTER: (
+        "You have no night ability, but the moment you die — lynched or "
+        "killed at night — you take one living player down with you. You "
+        "win with the village."
+    ),
 }
 
 
@@ -81,6 +87,8 @@ def standard_setup(n_players: int) -> list[Role]:
         roles.append(Role.SEER)
     if village_seats >= 3:
         roles.append(Role.DOCTOR)
+    if village_seats >= 4:
+        roles.append(Role.HUNTER)
 
     roles += [Role.VILLAGER] * (n_players - len(roles))
     return roles

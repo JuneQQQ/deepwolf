@@ -56,6 +56,10 @@ class LLMAgent(Agent):
             return data["statement"].strip() or "I'll stay quiet this round."
         return "I'll stay quiet this round."
 
+    def dying_shot(self, view: PlayerView) -> int:
+        candidates = view.others_alive() or list(view.living_ids)
+        return self._decide(view, T.KIND_SHOOT, candidates)
+
     # ------------------------------------------------------------- internals
     def _decide(self, view: PlayerView, kind: str, candidates: list[int]) -> int:
         messages = self._messages(view, kind, candidates)

@@ -17,6 +17,7 @@ KIND_INSPECT = "inspect"
 KIND_PROTECT = "protect"
 KIND_VOTE = "vote"
 KIND_SPEAK = "speak"
+KIND_SHOOT = "shoot"
 
 _ASK = {
     KIND_KILL: "It is night. As a werewolf, choose one living player for the "
@@ -30,6 +31,9 @@ _ASK = {
     KIND_SPEAK: "It is the daytime discussion. Make a short statement (2-4 "
                 "sentences) to the village. Push your faction's agenda — "
                 "share real reads if that helps you, or mislead if you must.",
+    KIND_SHOOT: "You are the Hunter and you have just died. As your final "
+                "act, choose one living player to shoot — aim at whoever you "
+                "most believe is a werewolf.",
 }
 
 

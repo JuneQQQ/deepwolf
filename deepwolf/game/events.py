@@ -27,6 +27,7 @@ class EventType(str, Enum):
     VOTE_CAST = "vote_cast"            # public
     LYNCH = "lynch"                    # public
     NO_LYNCH = "no_lynch"              # public
+    HUNTER_SHOT = "hunter_shot"        # public: a dying Hunter's revenge
     GAME_OVER = "game_over"            # public
 
 
