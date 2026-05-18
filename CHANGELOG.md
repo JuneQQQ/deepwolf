@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Planned
+- Additional roles: Cupid.
+
+## [0.3.0] — 2026-05-18
+
 ### Added
 - **Copilot calibration** — `deepwolf.copilot.calibration` and a new `deepwolf
   calibrate` command measure how well-calibrated the copilot's probabilities
@@ -35,9 +40,6 @@ All notable changes to this project are documented here. The format follows
   Simplified Chinese. Choose the language with `GameConfig(lang=...)` or the
   `--lang {en,zh}` CLI flag. English output is byte-for-byte unchanged. Adds a
   Chinese README (`README.zh-CN.md`).
-
-### Planned
-- Additional roles: Cupid.
 
 ## [0.2.0] — 2026-05-18
 
@@ -77,6 +79,7 @@ Initial public release.
 - **CLI** — `deepwolf simulate`, `deepwolf arena` and `deepwolf play`.
 - Test suite (33 tests), CI across Python 3.10–3.12, and full docs.
 
-[Unreleased]: https://github.com/JuneQQQ/deepwolf/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/JuneQQQ/deepwolf/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/JuneQQQ/deepwolf/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/JuneQQQ/deepwolf/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/JuneQQQ/deepwolf/releases/tag/v0.1.0
