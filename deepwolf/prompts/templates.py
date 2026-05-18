@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from deepwolf.game.events import EventType
 from deepwolf.game.state import PlayerView
-from deepwolf.i18n import Translator
+from deepwolf.i18n import Translator, pick
 
 # Decision kinds understood by both the LLM agent and the mock provider.
 KIND_KILL = "kill"
@@ -22,11 +22,6 @@ KIND_VOTE = "vote"
 KIND_SPEAK = "speak"
 KIND_SHOOT = "shoot"
 KIND_WITCH = "witch"
-
-
-def _line(lang: str, en: str, zh: str) -> str:
-    """Pick the string for ``lang`` (Chinese, else English)."""
-    return zh if lang == "zh" else en
 
 
 # Per-decision instructions, English / Chinese.
@@ -74,17 +69,8 @@ def system_message(view: PlayerView) -> str:
     tr = Translator(view.lang)
     role_name = tr.role_name(view.me_role)
     summary = tr.role_summary(view.me_role)
-    if view.lang == "zh":
-        return (
-            "你正在玩一局狼人杀（社交推理游戏）。当所有狼人都死亡时，村民阵营获胜；"
-            "当狼人数量达到或超过剩余村民时，狼人阵营获胜。\n\n"
-            f"你是 {view.me_name}（P{view.me_id}）。你的秘密身份是{role_name}。\n"
-            f"{summary}\n\n"
-            "全力争取胜利。仔细推理谁在说谎。狼人应当伪装并误导；村民应当比对各人的"
-            "发言与投票。发言简洁、保持角色。绝不要透露你本不该知道的信息。"
-            "请全程使用简体中文进行发言与推理。"
-        )
-    return (
+    return pick(
+        view.lang,
         "You are playing a game of Werewolf (Mafia), a game of social "
         "deduction. The Village wins when every werewolf is dead. The "
         "Werewolves win when they equal or outnumber the remaining villagers.\n\n"
@@ -93,20 +79,27 @@ def system_message(view: PlayerView) -> str:
         "Play to win. Reason carefully about who is lying. Werewolves should "
         "blend in and misdirect; villagers should compare claims and voting "
         "patterns. Keep statements concise and in character. Never reveal "
-        "information you could not plausibly know."
+        "information you could not plausibly know.",
+        "你正在玩一局狼人杀（社交推理游戏）。当所有狼人都死亡时，村民阵营获胜；"
+        "当狼人数量达到或超过剩余村民时，狼人阵营获胜。\n\n"
+        f"你是 {view.me_name}（P{view.me_id}）。你的秘密身份是{role_name}。\n"
+        f"{summary}\n\n"
+        "全力争取胜利。仔细推理谁在说谎。狼人应当伪装并误导；村民应当比对各人的"
+        "发言与投票。发言简洁、保持角色。绝不要透露你本不该知道的信息。"
+        "请全程使用简体中文进行发言与推理。",
     )
 
 
 def decision_request(view: PlayerView, kind: str, candidates: list[int]) -> str:
     """The user message asking the agent for one concrete decision."""
     lang = view.lang
-    header = _line(lang, f"=== Day {view.day} ===", f"=== 第 {view.day} 天 ===")
+    header = pick(lang, f"=== Day {view.day} ===", f"=== 第 {view.day} 天 ===")
     parts = [
         header,
         _players_block(view),
         _secret_block(view),
         _log_block(view),
-        _line(lang, _ASK[kind][0], _ASK[kind][1]),
+        pick(lang, _ASK[kind][0], _ASK[kind][1]),
         _candidates_line(view, candidates),
         _format_instructions(lang, kind),
         f"[[ACTION kind={kind} candidates={','.join(map(str, candidates))} "
@@ -123,39 +116,39 @@ def witch_request(
     options = []
     if can_heal:
         who = f"{view.name(victim)} (P{victim})" if victim is not None else (
-            _line(lang, "the victim", "今夜的受害者")
+            pick(lang, "the victim", "今夜的受害者")
         )
-        options.append(_line(
+        options.append(pick(
             lang,
             f"  - HEALING potion: save {who} from the werewolves.",
             f"  - 解药：救下 {who}，使其免遭狼人猎杀。",
         ))
     if can_poison:
-        options.append(_line(
+        options.append(pick(
             lang,
             "  - POISON potion: kill any one living player.",
             "  - 毒药：毒杀任意一名存活玩家。",
         ))
     living = [p.id for p in view.players if p.alive]
     parts = [
-        _line(lang, f"=== Day {view.day} — night ===", f"=== 第 {view.day} 天 — 夜晚 ==="),
+        pick(lang, f"=== Day {view.day} — night ===", f"=== 第 {view.day} 天 — 夜晚 ==="),
         _players_block(view),
         _secret_block(view),
         _log_block(view),
-        _line(
+        pick(
             lang,
             "You are the Witch. Potions still available to you:\n"
             + "\n".join(options),
             "你是女巫。你当前还可使用的药水：\n" + "\n".join(options),
         ),
-        _line(
+        pick(
             lang,
             "Decide whether to use each — you may use both, one, or neither. "
             "Spend potions wisely; you only get one of each for the whole game.",
             "决定是否使用每一瓶药水——可以都用、用一瓶、或都不用。"
             "谨慎用药，整局游戏每种药水只有一瓶。",
         ),
-        _line(
+        pick(
             lang,
             'Respond with ONLY a JSON object: {"heal": true|false, "poison": '
             '<player id|null>}. Use "poison" only to name someone you want dead.',
@@ -170,44 +163,44 @@ def witch_request(
 
 def _players_block(view: PlayerView) -> str:
     lang = view.lang
-    alive = _line(lang, "alive", "存活")
-    dead = _line(lang, "DEAD", "已死亡")
-    you = _line(lang, "  <- you", "  ← 你")
+    alive = pick(lang, "alive", "存活")
+    dead = pick(lang, "DEAD", "已死亡")
+    you = pick(lang, "  <- you", "  ← 你")
     rows = []
     for p in view.players:
         tag = alive if p.alive else dead
         mark = you if p.id == view.me_id else ""
         rows.append(f"  P{p.id} {p.name}: {tag}{mark}")
-    return _line(lang, "Players:", "玩家：") + "\n" + "\n".join(rows)
+    return pick(lang, "Players:", "玩家：") + "\n" + "\n".join(rows)
 
 
 def _secret_block(view: PlayerView) -> str:
     if not view.private_notes:
         return ""
-    label = _line(view.lang, "What only you know:", "只有你知道的信息：")
+    label = pick(view.lang, "What only you know:", "只有你知道的信息：")
     return label + "\n" + "\n".join(f"  - {n}" for n in view.private_notes)
 
 
 def _log_block(view: PlayerView) -> str:
     lang = view.lang
-    secret = _line(lang, "  [secret] ", "  [私密] ")
+    secret = pick(lang, "  [secret] ", "  [私密] ")
     lines = []
     for e in view.events:
         if e.type in (EventType.ROLE_ASSIGNED, EventType.PACK_REVEAL):
             continue  # already surfaced in the secret block
         lines.append(("  " if e.public else secret) + e.text)
     if not lines:
-        return _line(
+        return pick(
             lang,
             "Game log: (nothing has happened yet)",
             "对局日志：（暂无事件）",
         )
-    return _line(lang, "Game log:", "对局日志：") + "\n" + "\n".join(lines)
+    return pick(lang, "Game log:", "对局日志：") + "\n" + "\n".join(lines)
 
 
 def _candidates_line(view: PlayerView, candidates: list[int]) -> str:
     named = ", ".join(f"{view.name(c)} (P{c})" for c in candidates)
-    return _line(
+    return pick(
         view.lang,
         f"Your legal choices are: {named}.",
         f"你的合法选择有：{named}。",
@@ -216,14 +209,14 @@ def _candidates_line(view: PlayerView, candidates: list[int]) -> str:
 
 def _format_instructions(lang: str, kind: str) -> str:
     if kind == KIND_SPEAK:
-        return _line(
+        return pick(
             lang,
             'Respond with ONLY a JSON object: {"statement": "<your words>"}. '
             "No other text.",
             '只回复一个 JSON 对象：{"statement": "<你的发言>"}。'
             "statement 用简体中文书写，不要输出其他内容。",
         )
-    return _line(
+    return pick(
         lang,
         'Respond with ONLY a JSON object: {"choice": <player id as integer>, '
         '"reasoning": "<one sentence>"}. The choice MUST be one of the legal '

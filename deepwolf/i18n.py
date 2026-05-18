@@ -17,6 +17,16 @@ LANGUAGES = ("en", "zh")
 #: Human-readable language names, for prompts that ask an agent to reply in one.
 LANGUAGE_NAMES = {"en": "English", "zh": "Simplified Chinese (简体中文)"}
 
+
+def pick(lang: str, en: str, zh: str) -> str:
+    """Choose one of two strings for ``lang`` — Chinese, otherwise English.
+
+    A lightweight companion to :class:`Translator` for the many one-off
+    bilingual strings in prompts and CLI output that do not warrant a full
+    catalogue entry.
+    """
+    return zh if lang == "zh" else en
+
 # Templated game-event messages. ``{...}`` fields are filled by Translator.t().
 GAME_MESSAGES: dict[str, dict[str, str]] = {
     "game_start": {

@@ -27,14 +27,9 @@ from deepwolf.game.engine import GameEngine
 from deepwolf.game.events import Event, EventType
 from deepwolf.game.roles import Faction, Role
 from deepwolf.game.state import GameConfig, GameResult, PlayerView
-from deepwolf.i18n import LANGUAGES, Translator
+from deepwolf.i18n import LANGUAGES, Translator, pick
 from deepwolf.llm.mock import MockProvider
 from deepwolf.llm.provider import LLMConfig, LLMProvider, OpenAICompatProvider
-
-
-def _loc(lang: str, en: str, zh: str) -> str:
-    """Pick a CLI string for the active language."""
-    return zh if lang == "zh" else en
 
 try:  # rich makes the output pleasant but is not load-bearing
     from rich.console import Console
@@ -252,9 +247,9 @@ def cmd_play(args: argparse.Namespace) -> int:
     _print_outcome(console, result, args.lang)
     won = result.winner is config_faction(result, seat)
     msg = (
-        _loc(args.lang, "You won!", "你赢了！")
+        pick(args.lang, "You won!", "你赢了！")
         if won
-        else _loc(args.lang, "You lost.", "你输了。")
+        else pick(args.lang, "You lost.", "你输了。")
     )
     console.print(f"\n[bold]{msg}[/bold]" if _RICH else f"\n{msg}")
     return 0
@@ -338,17 +333,17 @@ def _print_public(console: Any, event: Event) -> None:
 
 def _print_outcome(console: Any, result: GameResult, lang: str = "en") -> None:
     tr = Translator(lang)
-    console.rule(_loc(lang, "result", "对局结果"))
+    console.rule(pick(lang, "result", "对局结果"))
     rows = []
     for p in result.players:
         status = (
-            _loc(lang, "survived", "存活")
+            pick(lang, "survived", "存活")
             if p.alive
-            else _loc(lang, f"died day {p.death_day}", f"第 {p.death_day} 天死亡")
+            else pick(lang, f"died day {p.death_day}", f"第 {p.death_day} 天死亡")
         )
         rows.append(f"  P{p.id} {p.name:<8} {tr.role_name(p.role):<9} — {status}")
     body = "\n".join(rows)
-    title = _loc(
+    title = pick(
         lang,
         f"{tr.faction_label(result.winner)} win",
         f"{tr.faction_label(result.winner)}获胜",
