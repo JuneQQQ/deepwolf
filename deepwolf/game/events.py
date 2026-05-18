@@ -25,6 +25,7 @@ class EventType(str, Enum):
     DAY_BREAKS = "day_breaks"          # public
     DEATH_ANNOUNCED = "death_announced"  # public
     QUIET_NIGHT = "quiet_night"        # public: nobody died
+    SPEAK_BID = "speak_bid"            # public: a bid for the discussion floor
     STATEMENT = "statement"            # public: a daytime statement
     VOTE_CAST = "vote_cast"            # public
     LYNCH = "lynch"                    # public

@@ -49,6 +49,15 @@ class Agent(ABC):
         pool = view.others_alive() or list(view.living_ids)
         return view.rng.choice(pool)
 
+    def bid(self, view: PlayerView) -> tuple[int, str]:
+        """Return ``(priority, reason)`` — a bid for the discussion floor.
+
+        Only called in the ``bidding`` discussion mode. ``priority`` is clamped
+        to 0-10 by the engine; ``reason`` is a short public justification. The
+        default is a neutral bid; LLM and human agents override it.
+        """
+        return (5, "")
+
     def witch_turn(
         self,
         view: PlayerView,

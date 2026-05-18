@@ -42,6 +42,9 @@ class RandomAgent(Agent):
     def speak(self, view: PlayerView) -> str:
         return view.rng.choice(_FILLER.get(view.lang, _FILLER["en"]))
 
+    def bid(self, view: PlayerView) -> tuple[int, str]:
+        return (view.rng.randint(0, 10), "")
+
     def witch_turn(
         self, view: PlayerView, victim: int | None, can_heal: bool, can_poison: bool
     ) -> tuple[bool, int | None]:

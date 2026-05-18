@@ -7,6 +7,13 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Bidding-based discussion** ([#19](https://github.com/JuneQQQ/deepwolf/issues/19))
+  — a new `discussion_mode="bidding"` (and a `--bidding` CLI flag) where agents
+  bid for the discussion floor each round instead of speaking in fixed seating
+  order; highest bid speaks first. Inspired by Google's Werewolf Arena — but
+  deepwolf's twist is that every bid (priority *and* a public reason) is emitted
+  as an event, so an eager bid with a thin reason is itself a readable signal.
+  The default stays `"ordered"`, so existing games are unchanged.
 - **Arena leaderboard** ([#4](https://github.com/JuneQQQ/deepwolf/issues/4)) —
   `deepwolf.arena.leaderboard` and a `deepwolf leaderboard` command rank agents
   fairly: each competitor plays both sides of a fixed reference match-up under

@@ -32,6 +32,7 @@ class GameConfig:
     player_names: list[str] | None = None
     seed: int | None = None
     discussion_rounds: int = 1
+    discussion_mode: str = "ordered"  # "ordered" (seating) or "bidding"
     max_days: int = 30
     reveal_role_on_death: bool = True
     lang: str = "en"
@@ -48,6 +49,8 @@ class GameConfig:
             raise ValueError("player_names must match the number of roles")
         if self.lang not in LANGUAGES:
             raise ValueError(f"unknown language {self.lang!r}")
+        if self.discussion_mode not in ("ordered", "bidding"):
+            raise ValueError(f"unknown discussion_mode {self.discussion_mode!r}")
 
 
 @dataclass

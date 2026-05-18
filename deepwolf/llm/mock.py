@@ -63,6 +63,8 @@ class MockProvider(LLMProvider):
         if kind == "witch":
             # The offline witch plays conservatively: it banks both potions.
             return json.dumps({"heal": False, "poison": None})
+        if kind == "bid":
+            return json.dumps({"priority": self.rng.randint(0, 10), "reason": ""})
 
         choice = self.rng.choice(candidates) if candidates else 0
         return json.dumps({"choice": choice, "reasoning": "mock heuristic pick."})

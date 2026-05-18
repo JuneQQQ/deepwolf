@@ -266,7 +266,7 @@ class GameEngine:
             self.tr.t("day_breaks", day=s.day),
         ))
         for _ in range(self.config.discussion_rounds):
-            for pid in s.living_ids():
+            for pid in self._speaking_order():
                 self._collect_statement(pid)
 
         s.phase = Phase.DAY_VOTE
@@ -293,6 +293,43 @@ class GameEngine:
                 EventType.LYNCH, s.day, "day", text, target=lynched, data=data,
             ))
             self._process_hunter(lynched)
+
+    def _speaking_order(self) -> list[int]:
+        """Living players in the order they speak this round.
+
+        In ``ordered`` mode this is seating order. In ``bidding`` mode every
+        agent bids for the floor; the bids (priority + a public reason) are
+        emitted as events, and speakers are seated highest-bid-first. Surfacing
+        the bids keeps the round explainable — an eager bid with a thin reason
+        is itself a signal the copilot and other agents can read.
+        """
+        s = self.state
+        living = s.living_ids()
+        if self.config.discussion_mode != "bidding":
+            return living
+
+        bids: dict[int, int] = {}
+        for pid in living:
+            view = build_view(s, pid, Phase.DAY_DISCUSSION)
+            try:
+                priority, reason = self.agents[pid].bid(view)
+            except Exception:  # noqa: BLE001 - an agent error must not crash a game
+                priority, reason = 5, ""
+            priority = max(0, min(10, priority if isinstance(priority, int) else 5))
+            reason = str(reason).strip()[:200]
+            bids[pid] = priority
+            if reason:
+                text = self.tr.t(
+                    "speak_bid_reasoned", who=self._who(pid),
+                    priority=priority, reason=reason,
+                )
+            else:
+                text = self.tr.t("speak_bid", who=self._who(pid), priority=priority)
+            self._emit(Event(
+                EventType.SPEAK_BID, s.day, "day", text,
+                actor=pid, data={"priority": priority, "reason": reason},
+            ))
+        return sorted(living, key=lambda p: (-bids[p], p))
 
     def _collect_statement(self, player_id: int) -> None:
         s = self.state
