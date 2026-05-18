@@ -46,6 +46,9 @@ class MockProvider(LLMProvider):
         candidates = [int(x) for x in match.group(2).split(",") if x]
         if kind == "speak":
             return json.dumps({"statement": self._statement(candidates)})
+        if kind == "witch":
+            # The offline witch plays conservatively: it banks both potions.
+            return json.dumps({"heal": False, "poison": None})
 
         choice = self.rng.choice(candidates) if candidates else 0
         return json.dumps({"choice": choice, "reasoning": "mock heuristic pick."})

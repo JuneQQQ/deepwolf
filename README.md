@@ -32,7 +32,7 @@ to a human as a copilot.
 ## Features
 
 - ♟️ **A strict, seeded rules engine.** Night/day cycle with Werewolf, Seer,
-  Doctor and Hunter abilities. Every game is reproducible from a seed; an
+  Doctor, Hunter and Witch abilities. Every game is reproducible from a seed; an
   illegal or hallucinated agent move can never corrupt a game.
 - 🔌 **Vendor-neutral LLMs.** Any OpenAI-compatible endpoint — OpenAI,
   DeepSeek, Xiaomi MiMo, Groq, OpenRouter, a local server. Change one env var.
@@ -151,7 +151,7 @@ a natural-language read of the *statements* the heuristic ignores.
 ## Roadmap
 
 See [CHANGELOG.md](CHANGELOG.md) and the [issue tracker](https://github.com/JuneQQQ/deepwolf/issues).
-Near-term: more roles (Witch, Cupid) and a leaderboard of models in the arena.
+Near-term: more roles (Cupid) and a leaderboard of models in the arena.
 
 ## Contributing
 

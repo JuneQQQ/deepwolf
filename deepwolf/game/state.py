@@ -74,6 +74,8 @@ class GameState:
     day: int = 0
     phase: Phase = Phase.SETUP
     winner: Faction | None = None
+    witch_heal_used: bool = False
+    witch_poison_used: bool = False
 
     # ---- construction -----------------------------------------------------
     @classmethod

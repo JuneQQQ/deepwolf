@@ -29,6 +29,7 @@ class Role(str, Enum):
     SEER = "seer"
     DOCTOR = "doctor"
     HUNTER = "hunter"
+    WITCH = "witch"
 
     @property
     def faction(self) -> Faction:
@@ -37,7 +38,7 @@ class Role(str, Enum):
     @property
     def has_night_action(self) -> bool:
         """Whether the engine must consult this role during the night phase."""
-        return self in (Role.WEREWOLF, Role.SEER, Role.DOCTOR)
+        return self in (Role.WEREWOLF, Role.SEER, Role.DOCTOR, Role.WITCH)
 
     @property
     def summary(self) -> str:
@@ -66,6 +67,12 @@ _SUMMARIES: dict[Role, str] = {
         "killed at night — you take one living player down with you. You "
         "win with the village."
     ),
+    Role.WITCH: (
+        "You hold two one-time potions. Each night you learn who the "
+        "werewolves attacked; you may use a healing potion to save them, "
+        "and/or a poison potion to kill any one player. You win with the "
+        "village."
+    ),
 }
 
 
@@ -89,6 +96,8 @@ def standard_setup(n_players: int) -> list[Role]:
         roles.append(Role.DOCTOR)
     if village_seats >= 4:
         roles.append(Role.HUNTER)
+    if village_seats >= 5:
+        roles.append(Role.WITCH)
 
     roles += [Role.VILLAGER] * (n_players - len(roles))
     return roles

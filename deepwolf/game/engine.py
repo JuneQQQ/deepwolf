@@ -109,24 +109,40 @@ class GameEngine:
         victim = self._werewolf_target()
         self._seer_inspection()
         protected = self._doctor_protection()
+        healed, poisoned = self._witch_action(victim)
 
-        if victim is not None and victim != protected:
-            self._kill(victim, "killed by werewolves")
-            reveal = self._role_reveal(victim)
-            self._emit(Event(
-                EventType.DEATH_ANNOUNCED, s.day, "night",
-                f"At dawn the village finds {s.name(victim)} (P{victim}) dead."
-                + reveal[0],
-                target=victim, data=reveal[1],
-            ))
-            self._process_hunter(victim)
-        else:
-            saved = protected is not None and protected == victim
+        # Collect the night's deaths, then announce them together.
+        deaths: list[tuple[int, str]] = []
+        if victim is not None and victim != protected and not healed:
+            deaths.append((victim, "killed by werewolves"))
+        if poisoned is not None and poisoned not in {d[0] for d in deaths}:
+            deaths.append((poisoned, "poisoned by the Witch"))
+
+        if not deaths:
+            saved = victim is not None and (victim == protected or healed)
             self._emit(Event(
                 EventType.QUIET_NIGHT, s.day, "night",
                 "The village wakes to find everyone alive."
-                + (" The doctor's vigil paid off." if saved else ""),
+                + (" Someone was watched over in the dark." if saved else ""),
             ))
+            return
+        self._announce_deaths(deaths)
+
+    def _announce_deaths(self, deaths: list[tuple[int, str]]) -> None:
+        """Mark each night death, announce it, and fire any Hunter shots."""
+        s = self.state
+        for pid, cause in deaths:
+            if not s.player(pid).alive:
+                continue  # already taken by an earlier death this night
+            self._kill(pid, cause)
+            reveal = self._role_reveal(pid)
+            self._emit(Event(
+                EventType.DEATH_ANNOUNCED, s.day, "night",
+                f"At dawn the village finds {s.name(pid)} (P{pid}) dead."
+                + reveal[0],
+                target=pid, data=reveal[1],
+            ))
+            self._process_hunter(pid)
 
     def _werewolf_target(self) -> int | None:
         s = self.state
@@ -177,6 +193,59 @@ class GameEngine:
             target=target, public=False, visible_to=frozenset({doctor.id}),
         ))
         return target
+
+    def _witch_action(self, victim: int | None) -> tuple[bool, int | None]:
+        """Run the Witch's night, returning (victim healed?, poison target)."""
+        s = self.state
+        witches = s.living_with_role(Role.WITCH)
+        if not witches:
+            return False, None
+        witch = witches[0]
+        can_heal = not s.witch_heal_used and victim is not None
+        can_poison = not s.witch_poison_used
+        if not (can_heal or can_poison):
+            return False, None
+
+        if victim is not None:
+            self._emit(Event(
+                EventType.WITCH_NIGHT_INFO, s.day, "night",
+                f"The werewolves attacked {s.name(victim)} (P{victim}) tonight.",
+                target=victim, public=False, visible_to=frozenset({witch.id}),
+            ))
+        view = build_view(s, witch.id, Phase.NIGHT)
+        try:
+            heal, poison = self.agents[witch.id].witch_turn(
+                view, victim, can_heal, can_poison
+            )
+        except Exception:  # noqa: BLE001 - an agent error must not crash a game
+            heal, poison = False, None
+
+        healed = False
+        if heal and can_heal and victim is not None:
+            s.witch_heal_used = True
+            healed = True
+            self._emit(Event(
+                EventType.WITCH_POTION, s.day, "night",
+                f"You use your healing potion on {s.name(victim)} (P{victim}).",
+                target=victim, public=False, visible_to=frozenset({witch.id}),
+                data={"potion": "heal"},
+            ))
+        poison_target: int | None = None
+        if (
+            can_poison
+            and isinstance(poison, int)
+            and poison in s.living_ids()
+            and poison != witch.id
+        ):
+            s.witch_poison_used = True
+            poison_target = poison
+            self._emit(Event(
+                EventType.WITCH_POTION, s.day, "night",
+                f"You use your poison potion on {s.name(poison)} (P{poison}).",
+                target=poison, public=False, visible_to=frozenset({witch.id}),
+                data={"potion": "poison"},
+            ))
+        return healed, poison_target
 
     # ----------------------------------------------------------------- day
     def _day_phase(self) -> None:

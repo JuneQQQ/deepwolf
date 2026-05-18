@@ -48,3 +48,19 @@ class Agent(ABC):
         """
         pool = view.others_alive() or list(view.living_ids)
         return view.rng.choice(pool)
+
+    def witch_turn(
+        self,
+        view: PlayerView,
+        victim: int | None,
+        can_heal: bool,
+        can_poison: bool,
+    ) -> tuple[bool, int | None]:
+        """Return ``(use_heal, poison_target)`` for the Witch's night.
+
+        ``victim`` is who the werewolves attacked (``None`` if they did not, or
+        the Witch cannot know). ``can_heal`` / ``can_poison`` say which one-time
+        potions are still available. Only called for a living Witch. Concrete,
+        so existing agents need no change; the default uses no potions.
+        """
+        return (False, None)

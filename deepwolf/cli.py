@@ -123,6 +123,28 @@ class HumanAgent(Agent):
         pool = view.others_alive() or list(view.living_ids)
         return self._ask(view, pool, "You are the dying Hunter — who do you shoot?")
 
+    def witch_turn(
+        self, view: PlayerView, victim: int | None, can_heal: bool, can_poison: bool
+    ) -> tuple[bool, int | None]:
+        self._banner(view, "WITCH")
+        if victim is not None:
+            self.console.print(f"  The werewolves attacked {view.name(victim)} (P{victim}).")
+        else:
+            self.console.print("  You sense no werewolf attack you could counter.")
+        heal = False
+        if can_heal and victim is not None:
+            answer = self.console.input(f"  Use your HEALING potion on P{victim}? [y/N] ")
+            heal = answer.strip().lower().startswith("y")
+        poison: int | None = None
+        if can_poison:
+            answer = self.console.input(
+                "  POISON potion — enter a player id to kill, or blank to skip: "
+            )
+            raw = answer.strip().lstrip("Pp")
+            if raw.isdigit() and int(raw) in view.others_alive():
+                poison = int(raw)
+        return (heal, poison)
+
     def _banner(self, view: PlayerView, phase: str) -> None:
         self.console.rule(f"You are {view.me_name} (P{view.me_id}) — {view.me_role.value} — {phase}")
         for note in view.private_notes:

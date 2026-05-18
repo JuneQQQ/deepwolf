@@ -15,9 +15,14 @@ All notable changes to this project are documented here. The format follows
   — the `deepwolf.game.transcript` module and a `--transcript PATH` flag on
   `deepwolf simulate` write a finished game as a versioned, machine-readable
   JSON record (players, full event log, winner).
+- **Witch role** ([#2](https://github.com/JuneQQQ/deepwolf/issues/2)) — a
+  villager with two one-time potions. Each night the Witch learns who the
+  werewolves attacked and may spend a healing potion to save them and/or a
+  poison potion to kill any player. The night phase now resolves multiple
+  simultaneous deaths.
 
 ### Planned
-- Additional roles: Witch, Cupid.
+- Additional roles: Cupid.
 - A model leaderboard built from arena runs.
 
 ## [0.1.0] — 2026-05-18

@@ -19,6 +19,7 @@ def test_standard_setup_is_balanced():
     assert roles.count(Role.SEER) == 1
     assert roles.count(Role.DOCTOR) == 1
     assert roles.count(Role.HUNTER) == 1
+    assert roles.count(Role.WITCH) == 1
 
 
 def test_small_games_omit_the_special_roles():
@@ -120,3 +121,69 @@ def test_hunter_fires_a_revenge_shot_on_death():
     # the Hunter's victim must really be dead
     assert not result.players[shot.target].alive
     _FixedVoter.target_id = -1
+
+
+def test_witch_role_is_a_villager_with_a_night_action():
+    assert Role.WITCH.faction is Faction.VILLAGE
+    assert Role.WITCH.has_night_action is True
+
+
+class _WitchScript(RandomAgent):
+    """Scripts the werewolf target and the Witch's potions for tests."""
+
+    wolf_target = -1
+    witch_heal = False
+    witch_poison = -1
+
+    def night_action(self, view):
+        if (
+            view.me_role is Role.WEREWOLF
+            and _WitchScript.wolf_target in view.others_alive()
+        ):
+            return _WitchScript.wolf_target
+        return super().night_action(view)
+
+    def witch_turn(self, view, victim, can_heal, can_poison):
+        heal = can_heal and _WitchScript.witch_heal
+        poison = None
+        if can_poison and _WitchScript.witch_poison in view.others_alive():
+            poison = _WitchScript.witch_poison
+        return (heal, poison)
+
+
+def test_witch_healing_potion_cancels_the_night_kill():
+    from deepwolf.game.events import EventType
+
+    config = GameConfig(
+        roles=[Role.WEREWOLF, Role.WITCH, Role.VILLAGER, Role.VILLAGER], seed=2
+    )
+    engine = GameEngine(config, lambda pid, _: _WitchScript(pid))
+    victim = next(p.id for p in engine.state.players if p.role is Role.VILLAGER)
+    _WitchScript.wolf_target = victim
+    _WitchScript.witch_heal = True
+    _WitchScript.witch_poison = -1
+
+    result = engine.run()
+
+    assert any(
+        e.type is EventType.QUIET_NIGHT and e.day == 1 for e in result.events
+    ), "the Witch healed the victim but a death was still announced"
+
+
+def test_witch_poison_potion_kills_its_target():
+    config = GameConfig(
+        roles=[Role.WEREWOLF, Role.WITCH, Role.VILLAGER, Role.VILLAGER, Role.VILLAGER],
+        seed=5,
+    )
+    engine = GameEngine(config, lambda pid, _: _WitchScript(pid))
+    villagers = [p.id for p in engine.state.players if p.role is Role.VILLAGER]
+    _WitchScript.wolf_target = villagers[0]
+    _WitchScript.witch_heal = False
+    _WitchScript.witch_poison = villagers[1]
+
+    result = engine.run()
+
+    poisoned = result.players[villagers[1]]
+    assert not poisoned.alive
+    assert poisoned.death_day == 1
+    assert poisoned.death_cause == "poisoned by the Witch"
