@@ -252,6 +252,48 @@ def config_faction(result: GameResult, seat: int) -> Faction:
     return result.players[seat].faction  # type: ignore[attr-defined]
 
 
+def cmd_leaderboard(args: argparse.Namespace) -> int:
+    from deepwolf.arena.leaderboard import Leaderboard
+
+    console = _console()
+
+    def make_random(player_id: int) -> Agent:
+        return RandomAgent(player_id)
+
+    mock = MockProvider(seed=args.model_seed)
+
+    def make_mock(player_id: int) -> Agent:
+        return LLMAgent(player_id, mock)
+
+    competitors: dict[str, object] = {"random": make_random, "mock-llm": make_mock}
+    if args.provider == "env":
+        provider = build_provider("env")
+
+        def make_llm(player_id: int) -> Agent:
+            return LLMAgent(player_id, provider)
+
+        competitors[args.model or "llm"] = make_llm
+
+    board = Leaderboard(
+        args.players, competitors, make_random,  # type: ignore[arg-type]
+        reference_name="random", n_games=args.games, base_seed=args.seed,
+    )
+    console.rule(f"deepwolf leaderboard — {args.games} games per side")
+
+    def progress(done: int, total: int) -> None:
+        end = "\n" if done == total else "\r"
+        print(f"  evaluating competitors... {done}/{total}", end=end, flush=True)
+
+    report = board.run(progress=progress)
+    _print_leaderboard(console, report)
+    if args.markdown:
+        from pathlib import Path
+
+        Path(args.markdown).write_text(report.to_markdown() + "\n", encoding="utf-8")
+        console.print(f"markdown table written to {args.markdown}")
+    return 0
+
+
 # -------------------------------------------------------------- rendering
 _STYLE = {
     EventType.GAME_START: "bold cyan",
@@ -325,6 +367,27 @@ def _print_report(console: Any, report: ArenaReport) -> None:
         console.print(agents)
 
 
+def _print_leaderboard(console: Any, report: Any) -> None:
+    if not _RICH:
+        console.print(report.render())
+        return
+    table = Table(
+        title=f"Leaderboard — {report.games_per_side} games/side vs '{report.reference}'",
+        header_style="bold",
+    )
+    table.add_column("#", justify="right")
+    table.add_column("agent")
+    table.add_column("score", justify="right")
+    table.add_column("as werewolf", justify="right")
+    table.add_column("as village", justify="right")
+    for rank, e in enumerate(report.entries, 1):
+        table.add_row(
+            str(rank), e.name, f"{e.score:.1%}",
+            f"{e.werewolf_win_rate:.1%}", f"{e.village_win_rate:.1%}",
+        )
+    console.print(table)
+
+
 def _show_copilot(console: Any, advice: Advice) -> None:
     if _RICH:
         table = Table(title="🐺 copilot — werewolf suspicion", header_style="bold")
@@ -390,6 +453,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="add an LLM second opinion (needs DEEPWOLF_* env vars)",
     )
     play.set_defaults(func=cmd_play)
+
+    board = sub.add_parser("leaderboard", help="rank agents against a reference")
+    board.add_argument("--players", type=int, default=7)
+    board.add_argument("--games", type=int, default=20, help="games per side")
+    board.add_argument("--seed", type=int, default=0)
+    board.add_argument("--provider", default="mock", help="'mock' or 'env'")
+    board.add_argument("--model-seed", type=int, default=0)
+    board.add_argument(
+        "--model", default=None, help="label for the --provider env competitor",
+    )
+    board.add_argument(
+        "--markdown", metavar="PATH", default=None,
+        help="also write the ranking as a Markdown table",
+    )
+    board.set_defaults(func=cmd_leaderboard)
     return parser
 
 
