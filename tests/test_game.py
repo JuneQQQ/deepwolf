@@ -187,3 +187,54 @@ def test_witch_poison_potion_kills_its_target():
     assert not poisoned.alive
     assert poisoned.death_day == 1
     assert poisoned.death_cause == "poisoned by the Witch"
+
+
+class _ChainScript(RandomAgent):
+    """Scripts a Hunter -> Hunter -> ... shot chain for tests."""
+
+    wolf_target = -1   # the werewolf kills this player at night
+    lynch_target = -1  # everyone votes to lynch this player
+    chain_target = -1  # a dying Hunter shoots this player
+
+    def night_action(self, view):
+        if (
+            view.me_role is Role.WEREWOLF
+            and _ChainScript.wolf_target in view.others_alive()
+        ):
+            return _ChainScript.wolf_target
+        return super().night_action(view)
+
+    def vote(self, view):
+        if _ChainScript.lynch_target in view.others_alive():
+            return _ChainScript.lynch_target
+        return super().vote(view)
+
+    def dying_shot(self, view):
+        if _ChainScript.chain_target in view.others_alive():
+            return _ChainScript.chain_target
+        return super().dying_shot(view)
+
+
+def test_chained_hunter_shots_resolve_and_terminate():
+    from deepwolf.game.events import EventType
+
+    config = GameConfig(
+        roles=[Role.WEREWOLF, Role.HUNTER, Role.HUNTER, Role.VILLAGER, Role.VILLAGER],
+        seed=4,
+    )
+    engine = GameEngine(config, lambda pid, _: _ChainScript(pid))
+    hunters = [p.id for p in engine.state.players if p.role is Role.HUNTER]
+    villager = next(p.id for p in engine.state.players if p.role is Role.VILLAGER)
+    _ChainScript.wolf_target = villager      # keep both Hunters alive for day 1
+    _ChainScript.lynch_target = hunters[0]   # lynch the first Hunter
+    _ChainScript.chain_target = hunters[1]   # who then shoots the second Hunter
+
+    result = engine.run()
+
+    shots = [e for e in result.events if e.type is EventType.HUNTER_SHOT]
+    # the lynched Hunter shoots the other Hunter, who shoots in turn
+    assert len(shots) == 2, "the Hunter -> Hunter chain did not fire twice"
+    assert shots[0].actor == hunters[0] and shots[0].target == hunters[1]
+    assert shots[1].actor == hunters[1]
+    # the recursion terminated and the game reached a winner
+    assert result.winner is not None
