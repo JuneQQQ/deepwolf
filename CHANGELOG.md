@@ -11,6 +11,9 @@ All notable changes to this project are documented here. The format follows
   `deepwolf.arena.leaderboard` and a `deepwolf leaderboard` command rank agents
   fairly: each competitor plays both sides of a fixed reference match-up under
   identical seeds. Exports a Markdown table.
+- **Provider guide** ([#5](https://github.com/JuneQQQ/deepwolf/issues/5)) —
+  `docs/providers.md` explains how to connect any OpenAI-compatible endpoint,
+  including local servers, with a troubleshooting table.
 
 ### Planned
 - Additional roles: Cupid.

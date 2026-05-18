@@ -92,6 +92,9 @@ deepwolf simulate --provider env
 deepwolf arena --provider env --villagers llm --werewolves llm --games 10
 ```
 
+For custom endpoints (a corporate gateway, a local llama.cpp / vLLM / Ollama
+server) and troubleshooting, see [`docs/providers.md`](docs/providers.md).
+
 ## How it works
 
 ```
