@@ -7,6 +7,15 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Copilot calibration** — `deepwolf.copilot.calibration` and a new `deepwolf
+  calibrate` command measure how well-calibrated the copilot's probabilities
+  are. They play many seeded games, score every suspicion against ground truth,
+  and report the Brier score, the Brier skill score, the Murphy decomposition
+  (reliability / resolution / uncertainty) and a reliability diagram. Motivated
+  by the WOLF benchmark (arXiv:2512.09187), which uses the Brier score for
+  werewolf-suspicion calibration — deepwolf is, in the surveyed literature, the
+  only werewolf project with an explainable copilot whose calibration *can* be
+  reported back to the human who relies on it.
 - **Bidding-based discussion** ([#19](https://github.com/JuneQQQ/deepwolf/issues/19))
   — a new `discussion_mode="bidding"` (and a `--bidding` CLI flag) where agents
   bid for the discussion floor each round instead of speaking in fixed seating

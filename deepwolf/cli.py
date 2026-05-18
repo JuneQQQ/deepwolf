@@ -314,6 +314,28 @@ def cmd_leaderboard(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_calibrate(args: argparse.Namespace) -> int:
+    from deepwolf.copilot.calibration import evaluate_copilot
+
+    console = _console()
+    console.rule(f"deepwolf calibrate — {args.games} games")
+
+    def progress(done: int, total: int) -> None:
+        end = "\n" if done == total else "\r"
+        print(f"  evaluating the copilot... {done}/{total}", end=end, flush=True)
+
+    report = evaluate_copilot(
+        args.players, args.games, base_seed=args.seed, progress=progress
+    )
+    _print_calibration(console, report)
+    if args.markdown:
+        from pathlib import Path
+
+        Path(args.markdown).write_text(report.to_markdown() + "\n", encoding="utf-8")
+        console.print(f"markdown report written to {args.markdown}")
+    return 0
+
+
 # -------------------------------------------------------------- rendering
 _STYLE = {
     EventType.GAME_START: "bold cyan",
@@ -418,6 +440,41 @@ def _print_leaderboard(console: Any, report: Any) -> None:
     console.print(table)
 
 
+def _print_calibration(console: Any, report: Any) -> None:
+    if not _RICH:
+        console.print(report.render())
+        return
+    metrics = Table(
+        title=f"Copilot calibration — {report.n_games} games, "
+        f"{report.n_predictions} predictions",
+        header_style="bold",
+    )
+    metrics.add_column("metric")
+    metrics.add_column("value", justify="right")
+    metrics.add_row("base rate (werewolves)", f"{report.base_rate:.1%}")
+    metrics.add_row("Brier score (0 = perfect)", f"{report.brier_score:.4f}")
+    metrics.add_row("baseline (base-rate) Brier", f"{report.baseline_brier:.4f}")
+    metrics.add_row("Brier skill score (1 = perfect)", f"{report.skill_score:.4f}")
+    metrics.add_row("reliability — calibration error", f"{report.reliability:.4f}")
+    metrics.add_row("resolution — discrimination", f"{report.resolution:.4f}")
+    metrics.add_row("uncertainty", f"{report.uncertainty:.4f}")
+    console.print(metrics)
+
+    diagram = Table(title="reliability diagram", header_style="bold")
+    diagram.add_column("predicted bin")
+    diagram.add_column("mean predicted", justify="right")
+    diagram.add_column("observed werewolf rate", justify="right")
+    diagram.add_column("count", justify="right")
+    for b in report.bins:
+        diagram.add_row(
+            f"{b.low:.0%}-{b.high:.0%}",
+            f"{b.mean_predicted:.1%}",
+            f"{b.observed_rate:.1%}",
+            str(b.count),
+        )
+    console.print(diagram)
+
+
 def _show_copilot(console: Any, advice: Advice) -> None:
     if _RICH:
         table = Table(title="🐺 copilot — werewolf suspicion", header_style="bold")
@@ -514,6 +571,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="also write the ranking as a Markdown table",
     )
     board.set_defaults(func=cmd_leaderboard)
+
+    cal = sub.add_parser(
+        "calibrate", help="measure how well-calibrated the copilot's probabilities are"
+    )
+    cal.add_argument("--players", type=int, default=7)
+    cal.add_argument("--games", type=int, default=40)
+    cal.add_argument("--seed", type=int, default=0)
+    cal.add_argument(
+        "--markdown", metavar="PATH", default=None,
+        help="also write the calibration report as Markdown",
+    )
+    cal.set_defaults(func=cmd_calibrate)
     return parser
 
 
