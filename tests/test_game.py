@@ -187,3 +187,29 @@ def test_witch_poison_potion_kills_its_target():
     assert not poisoned.alive
     assert poisoned.death_day == 1
     assert poisoned.death_cause == "poisoned by the Witch"
+
+
+def test_hunter_chain_two_hunters_shot_both_fire():
+    """Hunter A is lynched and shoots Hunter B; Hunter B (now dying) also fires."""
+    from deepwolf.game.events import EventType
+
+    # With seed=0, player order is: P0=HUNTER, P1=HUNTER, P2=WEREWOLF, P3=VILLAGER, P4=VILLAGER
+    config = GameConfig(
+        roles=[Role.WEREWOLF, Role.HUNTER, Role.HUNTER, Role.VILLAGER, Role.VILLAGER],
+        seed=0,
+    )
+    # Lynching P0 (first Hunter) triggers the chain: P0 shoots P1, P1 (also a Hunter) shoots back
+    _FixedVoter.target_id = 0
+
+    engine = GameEngine(config, lambda pid, _: _FixedVoter(pid))
+    result = engine.run()
+
+    shots = [e for e in result.events if e.type is EventType.HUNTER_SHOT]
+    # Both hunters should have fired (chain: P0 -> P1)
+    assert len(shots) == 2, f"Expected 2 shots, got {len(shots)}: {shots}"
+    assert shots[0].actor == 0 and shots[1].actor == 1,         f"Expected shots from P0 then P1, got actors {[s.actor for s in shots]}"
+    # Chain must have terminated (game finished)
+    assert result.winner in (Faction.VILLAGE, Faction.WEREWOLVES)
+
+    _FixedVoter.target_id = -1
+
