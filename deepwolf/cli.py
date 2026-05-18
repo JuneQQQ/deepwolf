@@ -146,6 +146,17 @@ class HumanAgent(Agent):
                 poison = int(raw)
         return (heal, poison)
 
+    def bid(self, view: PlayerView) -> tuple[int, str]:
+        self._banner(view, "BID")
+        raw = self.console.input(
+            pick(view.lang, "  Bid for the floor [0-10]: ", "  为发言权竞价 [0-10]：")
+        ).strip()
+        priority = int(raw) if raw.isdigit() else 5
+        reason = self.console.input(
+            pick(view.lang, "  reason (optional)> ", "  理由（可选）> ")
+        ).strip()
+        return (max(0, min(10, priority)), reason)
+
     def _banner(self, view: PlayerView, phase: str) -> None:
         self.console.rule(f"You are {view.me_name} (P{view.me_id}) — {view.me_role.value} — {phase}")
         for note in view.private_notes:
@@ -178,6 +189,7 @@ def cmd_simulate(args: argparse.Namespace) -> int:
     provider = build_provider(args.provider, seed=args.model_seed)
     config = GameConfig.standard(
         args.players, seed=args.seed, discussion_rounds=args.rounds, lang=args.lang,
+        discussion_mode="bidding" if args.bidding else "ordered",
     )
 
     def factory(player_id: int, role: Role) -> Agent:
@@ -225,6 +237,7 @@ def cmd_play(args: argparse.Namespace) -> int:
     console = _console()
     config = GameConfig.standard(
         args.players, seed=args.seed, discussion_rounds=args.rounds, lang=args.lang,
+        discussion_mode="bidding" if args.bidding else "ordered",
     )
     seat = args.seat if args.seat is not None else (args.seed % args.players)
     bot_provider = build_provider("mock", seed=args.seed)
@@ -310,6 +323,7 @@ _STYLE = {
     EventType.LYNCH: "red",
     EventType.HUNTER_SHOT: "bold red",
     EventType.QUIET_NIGHT: "green",
+    EventType.SPEAK_BID: "dim cyan",
     EventType.STATEMENT: "white",
     EventType.GAME_OVER: "bold green",
 }
@@ -450,6 +464,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--lang", choices=LANGUAGES, default="en",
         help="game language: en (English) or zh (中文)",
     )
+    sim.add_argument(
+        "--bidding", action="store_true",
+        help="agents bid for the discussion floor instead of fixed order",
+    )
     sim.set_defaults(func=cmd_simulate)
 
     arena = sub.add_parser("arena", help="benchmark agents over many games")
@@ -475,6 +493,10 @@ def build_parser() -> argparse.ArgumentParser:
     play.add_argument(
         "--lang", choices=LANGUAGES, default="en",
         help="game language: en (English) or zh (中文)",
+    )
+    play.add_argument(
+        "--bidding", action="store_true",
+        help="agents bid for the discussion floor instead of fixed order",
     )
     play.set_defaults(func=cmd_play)
 

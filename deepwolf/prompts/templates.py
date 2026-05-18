@@ -22,6 +22,7 @@ KIND_VOTE = "vote"
 KIND_SPEAK = "speak"
 KIND_SHOOT = "shoot"
 KIND_WITCH = "witch"
+KIND_BID = "bid"
 
 
 # Per-decision instructions, English / Chinese.
@@ -157,6 +158,35 @@ def witch_request(
         ),
         f"[[ACTION kind={KIND_WITCH} candidates={','.join(map(str, living))} "
         f"lang={lang}]]",
+    ]
+    return "\n\n".join(p for p in parts if p)
+
+
+def bid_request(view: PlayerView) -> str:
+    """The user message asking an agent to bid for the discussion floor."""
+    lang = view.lang
+    parts = [
+        pick(lang, f"=== Day {view.day} ===", f"=== 第 {view.day} 天 ==="),
+        _players_block(view),
+        _secret_block(view),
+        _log_block(view),
+        pick(
+            lang,
+            "The village is about to debate. Bid for the discussion floor: how "
+            "urgently do you need to speak this round? Bid high only if you have "
+            "something genuinely important to say — the bid and your reason are "
+            "public.",
+            "村庄即将展开讨论。为发言权竞价：本轮你有多迫切需要发言？"
+            "只有当你确有重要的话要说时才出高价——你的出价和理由都会公开。",
+        ),
+        pick(
+            lang,
+            'Respond with ONLY a JSON object: {"priority": <integer 0-10>, '
+            '"reason": "<short public reason>"}. No other text.',
+            '只回复一个 JSON 对象：{"priority": <0-10 的整数>, '
+            '"reason": "<简短的公开理由>"}。不要输出其他内容。',
+        ),
+        f"[[ACTION kind={KIND_BID} candidates= lang={lang}]]",
     ]
     return "\n\n".join(p for p in parts if p)
 

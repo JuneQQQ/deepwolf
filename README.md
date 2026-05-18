@@ -38,6 +38,8 @@ to a human as a copilot.
   illegal or hallucinated agent move can never corrupt a game.
 - 🌏 **Bilingual.** The whole game — event log, roles, agent speech, the CLI —
   runs in English or Simplified Chinese. Just add `--lang zh`.
+- 🗣️ **Adaptive discussion.** Optionally let agents *bid* for the floor each
+  round (`--bidding`) — bids are public, so wanting to talk is itself a tell.
 - 🔌 **Vendor-neutral LLMs.** Any OpenAI-compatible endpoint — OpenAI,
   DeepSeek, Xiaomi MiMo, Groq, OpenRouter, a local server. Change one env var.
 - 🧪 **Offline by default.** A deterministic `MockProvider` plays full games
@@ -62,6 +64,7 @@ Watch a full game play itself — **no API key needed**:
 ```bash
 deepwolf simulate --players 7 --seed 1
 deepwolf simulate --players 7 --seed 1 --lang zh                # play in Chinese
+deepwolf simulate --players 7 --seed 1 --bidding                # agents bid to speak
 deepwolf simulate --players 7 --seed 1 --transcript game.json   # + JSON record
 ```
 

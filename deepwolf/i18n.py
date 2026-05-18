@@ -90,6 +90,14 @@ GAME_MESSAGES: dict[str, dict[str, str]] = {
         "en": "Day {day}: the village gathers to debate.",
         "zh": "第 {day} 天：村民聚集起来展开讨论。",
     },
+    "speak_bid": {
+        "en": "{who} bids {priority}/10 for the floor.",
+        "zh": "{who} 出价 {priority}/10 争取发言。",
+    },
+    "speak_bid_reasoned": {
+        "en": "{who} bids {priority}/10 for the floor — {reason}",
+        "zh": "{who} 出价 {priority}/10 争取发言 —— {reason}",
+    },
     "vote_cast": {
         "en": "{voter} votes for {target}.",
         "zh": "{voter} 投票给 {target}。",
