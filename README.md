@@ -57,6 +57,7 @@ Watch a full game play itself — **no API key needed**:
 
 ```bash
 deepwolf simulate --players 7 --seed 1
+deepwolf simulate --players 7 --seed 1 --transcript game.json   # + JSON record
 ```
 
 Benchmark agents over many seeded games:
@@ -150,8 +151,7 @@ a natural-language read of the *statements* the heuristic ignores.
 ## Roadmap
 
 See [CHANGELOG.md](CHANGELOG.md) and the [issue tracker](https://github.com/JuneQQQ/deepwolf/issues).
-Near-term: more roles (Witch, Cupid), a JSON transcript exporter, and a
-leaderboard of models in the arena.
+Near-term: more roles (Witch, Cupid) and a leaderboard of models in the arena.
 
 ## Contributing
 
