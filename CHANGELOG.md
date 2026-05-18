@@ -11,10 +11,13 @@ All notable changes to this project are documented here. The format follows
   villager who, the moment they die (lynched or killed at night), takes one
   living player down with them. Chained Hunter deaths resolve correctly, and
   the copilot treats a Hunter's victim as a confirmed role.
+- **JSON transcript export** ([#3](https://github.com/JuneQQQ/deepwolf/issues/3))
+  — the `deepwolf.game.transcript` module and a `--transcript PATH` flag on
+  `deepwolf simulate` write a finished game as a versioned, machine-readable
+  JSON record (players, full event log, winner).
 
 ### Planned
 - Additional roles: Witch, Cupid.
-- JSON transcript export for completed games.
 - A model leaderboard built from arena runs.
 
 ## [0.1.0] — 2026-05-18

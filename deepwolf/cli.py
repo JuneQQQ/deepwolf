@@ -162,6 +162,11 @@ def cmd_simulate(args: argparse.Namespace) -> int:
     console.rule(f"deepwolf simulate — {args.players} players, seed {args.seed}")
     result = GameEngine(config, factory, observer=lambda e: _print_event(console, e)).run()
     _print_outcome(console, result)
+    if args.transcript:
+        from deepwolf.game.transcript import save
+
+        path = save(result, args.transcript)
+        console.print(f"transcript written to {path}")
     return 0
 
 
@@ -336,6 +341,10 @@ def build_parser() -> argparse.ArgumentParser:
     sim.add_argument("--rounds", type=int, default=1, help="discussion rounds per day")
     sim.add_argument("--provider", default="mock", help="'mock' (offline) or 'env'")
     sim.add_argument("--model-seed", type=int, default=0)
+    sim.add_argument(
+        "--transcript", metavar="PATH", default=None,
+        help="write a JSON transcript of the game to PATH",
+    )
     sim.set_defaults(func=cmd_simulate)
 
     arena = sub.add_parser("arena", help="benchmark agents over many games")
