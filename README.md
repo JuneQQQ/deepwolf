@@ -60,10 +60,11 @@ deepwolf simulate --players 7 --seed 1
 deepwolf simulate --players 7 --seed 1 --transcript game.json   # + JSON record
 ```
 
-Benchmark agents over many seeded games:
+Benchmark agents over many seeded games, or rank them on a leaderboard:
 
 ```bash
 deepwolf arena --games 50 --players 7 --villagers mock --werewolves random
+deepwolf leaderboard --games 30 --players 7 --markdown board.md
 ```
 
 Sit at the table yourself, with the copilot advising every vote:
@@ -151,7 +152,7 @@ a natural-language read of the *statements* the heuristic ignores.
 ## Roadmap
 
 See [CHANGELOG.md](CHANGELOG.md) and the [issue tracker](https://github.com/JuneQQQ/deepwolf/issues).
-Near-term: more roles (Cupid) and a leaderboard of models in the arena.
+Near-term: more roles (Cupid) and richer copilot belief modelling.
 
 ## Contributing
 

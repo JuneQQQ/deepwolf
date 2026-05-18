@@ -6,9 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Arena leaderboard** ([#4](https://github.com/JuneQQQ/deepwolf/issues/4)) —
+  `deepwolf.arena.leaderboard` and a `deepwolf leaderboard` command rank agents
+  fairly: each competitor plays both sides of a fixed reference match-up under
+  identical seeds. Exports a Markdown table.
+
 ### Planned
 - Additional roles: Cupid.
-- A model leaderboard built from arena runs.
 
 ## [0.2.0] — 2026-05-18
 

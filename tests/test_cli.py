@@ -15,6 +15,10 @@ def test_arena_command_runs():
     assert main(["arena", "--games", "3", "--players", "7", "--villagers", "random"]) == 0
 
 
+def test_leaderboard_command_runs():
+    assert main(["leaderboard", "--games", "3", "--players", "7"]) == 0
+
+
 def test_unknown_provider_is_reported(capsys):
     rc = main(["simulate", "--provider", "bogus"])
     assert rc == 1
