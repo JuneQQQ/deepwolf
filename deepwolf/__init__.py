@@ -15,6 +15,7 @@ from deepwolf.agents.llm_agent import LLMAgent
 from deepwolf.agents.random_agent import RandomAgent
 from deepwolf.arena.runner import Arena, ArenaReport
 from deepwolf.copilot.advisor import Advice, Suspicion, advise
+from deepwolf.copilot.calibration import CalibrationReport, evaluate_copilot
 from deepwolf.game.engine import GameEngine
 from deepwolf.game.roles import Faction, Role
 from deepwolf.game.state import GameConfig, GameResult, PlayerView
@@ -33,6 +34,8 @@ __all__ = [
     "Advice",
     "Suspicion",
     "advise",
+    "CalibrationReport",
+    "evaluate_copilot",
     "GameEngine",
     "Faction",
     "Role",

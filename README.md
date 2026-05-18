@@ -48,6 +48,9 @@ to a human as a copilot.
   rates, role survival and per-agent win rates.
 - 🧭 **An explainable copilot.** Not a black box: a transparent Bayesian-flavoured
   belief model you can read, optionally augmented by an LLM second opinion.
+- 📐 **A measured copilot.** `deepwolf calibrate` scores the copilot's *own*
+  probabilities — Brier score, skill score, a reliability diagram — so you know
+  how much to trust its percentages.
 
 ## Install
 
@@ -73,6 +76,7 @@ Benchmark agents over many seeded games, or rank them on a leaderboard:
 ```bash
 deepwolf arena --games 50 --players 7 --villagers mock --werewolves random
 deepwolf leaderboard --games 30 --players 7 --markdown board.md
+deepwolf calibrate --games 60 --players 7   # how trustworthy is the copilot?
 ```
 
 Sit at the table yourself, with the copilot advising every vote:
@@ -159,6 +163,11 @@ estimates `P(werewolf)`:
 
 Every number comes with the reasons that produced it. An optional LLM pass adds
 a natural-language read of the *statements* the heuristic ignores.
+
+And because those numbers are probabilities, you can check them: `deepwolf
+calibrate` plays many games, compares the copilot's `P(werewolf)` against what
+actually happened, and reports the Brier score, a skill score and a reliability
+diagram — a transparent answer to "how much should I trust this advice?"
 
 ## Roadmap
 
