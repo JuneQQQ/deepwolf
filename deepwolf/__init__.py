@@ -21,7 +21,7 @@ from deepwolf.game.state import GameConfig, GameResult, PlayerView
 from deepwolf.llm.mock import MockProvider
 from deepwolf.llm.provider import LLMConfig, LLMProvider, OpenAICompatProvider
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "Agent",

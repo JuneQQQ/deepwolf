@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Planned
+- Additional roles: Cupid.
+- A model leaderboard built from arena runs.
+
+## [0.2.0] — 2026-05-18
+
 ### Added
 - **Hunter role** ([#1](https://github.com/JuneQQQ/deepwolf/issues/1)) — a
   villager who, the moment they die (lynched or killed at night), takes one
@@ -20,10 +26,6 @@ All notable changes to this project are documented here. The format follows
   werewolves attacked and may spend a healing potion to save them and/or a
   poison potion to kill any player. The night phase now resolves multiple
   simultaneous deaths.
-
-### Planned
-- Additional roles: Cupid.
-- A model leaderboard built from arena runs.
 
 ## [0.1.0] — 2026-05-18
 
@@ -46,5 +48,6 @@ Initial public release.
 - **CLI** — `deepwolf simulate`, `deepwolf arena` and `deepwolf play`.
 - Test suite (33 tests), CI across Python 3.10–3.12, and full docs.
 
-[Unreleased]: https://github.com/JuneQQQ/deepwolf/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/JuneQQQ/deepwolf/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/JuneQQQ/deepwolf/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/JuneQQQ/deepwolf/releases/tag/v0.1.0
