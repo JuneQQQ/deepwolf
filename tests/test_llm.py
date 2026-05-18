@@ -10,8 +10,12 @@ from deepwolf.llm.mock import MockProvider
 from deepwolf.llm.provider import PRESETS, LLMConfig, LLMError
 
 
-def _action(kind: str, candidates: str) -> list[dict[str, str]]:
-    return [{"role": "user", "content": f"do something [[ACTION kind={kind} candidates={candidates}]]"}]
+def _action(kind: str, candidates: str, lang: str = "en") -> list[dict[str, str]]:
+    return [{
+        "role": "user",
+        "content": f"do something [[ACTION kind={kind} "
+                   f"candidates={candidates} lang={lang}]]",
+    }]
 
 
 def test_mock_answers_choice_actions_with_legal_json():
@@ -25,6 +29,13 @@ def test_mock_answers_speak_with_a_statement():
     mock = MockProvider(seed=0)
     data = json.loads(mock.complete(_action("speak", "1,2")))
     assert isinstance(data["statement"], str) and data["statement"]
+
+
+def test_mock_speaks_chinese_when_the_game_is_in_chinese():
+    mock = MockProvider(seed=0)
+    data = json.loads(mock.complete(_action("speak", "1,2", lang="zh")))
+    # at least one CJK character in the statement
+    assert any("一" <= ch <= "鿿" for ch in data["statement"])
 
 
 def test_mock_is_deterministic_for_a_seed():

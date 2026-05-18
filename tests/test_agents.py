@@ -24,6 +24,7 @@ def _view(role: Role = Role.VILLAGER) -> PlayerView:
         living_ids=(0, 1, 2, 3, 4),
         events=(),
         private_notes=(),
+        lang="en",
         rng=random.Random(0),
     )
 

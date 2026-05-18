@@ -13,6 +13,7 @@ from enum import Enum
 
 from deepwolf.game.events import Event, EventType
 from deepwolf.game.roles import Faction, Role, standard_setup
+from deepwolf.i18n import LANGUAGES, Translator
 
 
 class Phase(str, Enum):
@@ -33,6 +34,7 @@ class GameConfig:
     discussion_rounds: int = 1
     max_days: int = 30
     reveal_role_on_death: bool = True
+    lang: str = "en"
 
     @classmethod
     def standard(cls, n_players: int, **kwargs: object) -> GameConfig:
@@ -44,6 +46,8 @@ class GameConfig:
             raise ValueError("a game needs at least 4 roles")
         if self.player_names is not None and len(self.player_names) != len(self.roles):
             raise ValueError("player_names must match the number of roles")
+        if self.lang not in LANGUAGES:
+            raise ValueError(f"unknown language {self.lang!r}")
 
 
 @dataclass
@@ -138,6 +142,7 @@ class PlayerView:
     living_ids: tuple[int, ...]
     events: tuple[Event, ...]        # only events visible to this player
     private_notes: tuple[str, ...]   # human-readable secret knowledge
+    lang: str                        # language for prompts and rendering
     rng: random.Random
 
     def name(self, player_id: int) -> str:
@@ -176,7 +181,7 @@ def build_view(state: GameState, player_id: int, phase: Phase | None = None) -> 
     """Project ``state`` down to what ``player_id`` may legally see."""
     me = state.player(player_id)
     visible = tuple(e for e in state.events if e.visible(player_id))
-    notes = _private_notes(state, visible)
+    notes = _private_notes(state, visible, state.config.lang)
     return PlayerView(
         day=state.day,
         phase=phase or state.phase,
@@ -187,28 +192,31 @@ def build_view(state: GameState, player_id: int, phase: Phase | None = None) -> 
         living_ids=tuple(state.living_ids()),
         events=visible,
         private_notes=notes,
+        lang=state.config.lang,
         rng=state.rng,
     )
 
 
-def _private_notes(state: GameState, visible: tuple[Event, ...]) -> tuple[str, ...]:
-    """Turn a player's private events into readable reminders."""
+def _private_notes(
+    state: GameState, visible: tuple[Event, ...], lang: str
+) -> tuple[str, ...]:
+    """Turn a player's private events into readable, localised reminders."""
+    tr = Translator(lang)
     notes: list[str] = []
     for event in visible:
         if event.type is EventType.ROLE_ASSIGNED:
-            notes.append(f"Your secret role is {event.data['role'].upper()}.")
+            notes.append(tr.t("note_role", role=tr.role_name(event.data["role"])))
         elif event.type is EventType.PACK_REVEAL:
             pack = event.data.get("pack", [])
             mates = [f"{state.name(p)} (P{p})" for p in pack]
-            notes.append(
-                "Your werewolf pack: " + (", ".join(mates) if mates else "you alone")
-            )
+            joined = ", ".join(mates) if mates else tr.t("note_pack_alone")
+            notes.append(tr.t("note_pack", mates=joined))
         elif event.type is EventType.SEER_RESULT and event.target is not None:
-            verdict = "IS a werewolf" if event.data["is_wolf"] else "is NOT a werewolf"
-            notes.append(
-                f"Night {event.day}: you inspected {state.name(event.target)} "
-                f"(P{event.target}) — they {verdict}."
+            verdict = tr.t(
+                "note_verdict_wolf" if event.data["is_wolf"] else "note_verdict_clear"
             )
+            who = f"{state.name(event.target)} (P{event.target})"
+            notes.append(tr.t("note_seer", day=event.day, who=who, verdict=verdict))
     return tuple(notes)
 
 

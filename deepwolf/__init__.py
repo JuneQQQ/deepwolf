@@ -18,6 +18,7 @@ from deepwolf.copilot.advisor import Advice, Suspicion, advise
 from deepwolf.game.engine import GameEngine
 from deepwolf.game.roles import Faction, Role
 from deepwolf.game.state import GameConfig, GameResult, PlayerView
+from deepwolf.i18n import LANGUAGES, Translator
 from deepwolf.llm.mock import MockProvider
 from deepwolf.llm.provider import LLMConfig, LLMProvider, OpenAICompatProvider
 
@@ -38,6 +39,8 @@ __all__ = [
     "GameConfig",
     "GameResult",
     "PlayerView",
+    "LANGUAGES",
+    "Translator",
     "MockProvider",
     "LLMConfig",
     "LLMProvider",

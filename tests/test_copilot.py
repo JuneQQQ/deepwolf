@@ -29,7 +29,7 @@ def _seer_view() -> PlayerView:
     return PlayerView(
         day=2, phase=Phase.DAY_VOTE, me_id=0, me_name="P0", me_role=Role.SEER,
         players=players, living_ids=(0, 1, 2, 3), events=events,
-        private_notes=(), rng=random.Random(0),
+        private_notes=(), lang="en", rng=random.Random(0),
     )
 
 

@@ -27,8 +27,14 @@ from deepwolf.game.engine import GameEngine
 from deepwolf.game.events import Event, EventType
 from deepwolf.game.roles import Faction, Role
 from deepwolf.game.state import GameConfig, GameResult, PlayerView
+from deepwolf.i18n import LANGUAGES, Translator
 from deepwolf.llm.mock import MockProvider
 from deepwolf.llm.provider import LLMConfig, LLMProvider, OpenAICompatProvider
+
+
+def _loc(lang: str, en: str, zh: str) -> str:
+    """Pick a CLI string for the active language."""
+    return zh if lang == "zh" else en
 
 try:  # rich makes the output pleasant but is not load-bearing
     from rich.console import Console
@@ -176,14 +182,15 @@ def cmd_simulate(args: argparse.Namespace) -> int:
     console = _console()
     provider = build_provider(args.provider, seed=args.model_seed)
     config = GameConfig.standard(
-        args.players, seed=args.seed, discussion_rounds=args.rounds
+        args.players, seed=args.seed, discussion_rounds=args.rounds, lang=args.lang,
     )
+
     def factory(player_id: int, role: Role) -> Agent:
         return LLMAgent(player_id, provider)
 
     console.rule(f"deepwolf simulate — {args.players} players, seed {args.seed}")
     result = GameEngine(config, factory, observer=lambda e: _print_event(console, e)).run()
-    _print_outcome(console, result)
+    _print_outcome(console, result, args.lang)
     if args.transcript:
         from deepwolf.game.transcript import save
 
@@ -222,7 +229,7 @@ def cmd_arena(args: argparse.Namespace) -> int:
 def cmd_play(args: argparse.Namespace) -> int:
     console = _console()
     config = GameConfig.standard(
-        args.players, seed=args.seed, discussion_rounds=args.rounds
+        args.players, seed=args.seed, discussion_rounds=args.rounds, lang=args.lang,
     )
     seat = args.seat if args.seat is not None else (args.seed % args.players)
     bot_provider = build_provider("mock", seed=args.seed)
@@ -242,9 +249,14 @@ def cmd_play(args: argparse.Namespace) -> int:
     except (KeyboardInterrupt, EOFError):
         console.print("\n[dim]game abandoned[/dim]" if _RICH else "\ngame abandoned")
         return 130
-    _print_outcome(console, result)
+    _print_outcome(console, result, args.lang)
     won = result.winner is config_faction(result, seat)
-    console.print(("\n[bold]You won![/bold]" if won else "\n[bold]You lost.[/bold]") if _RICH else "")
+    msg = (
+        _loc(args.lang, "You won!", "你赢了！")
+        if won
+        else _loc(args.lang, "You lost.", "你输了。")
+    )
+    console.print(f"\n[bold]{msg}[/bold]" if _RICH else f"\n{msg}")
     return 0
 
 
@@ -324,18 +336,27 @@ def _print_public(console: Any, event: Event) -> None:
         _print_event(console, event)
 
 
-def _print_outcome(console: Any, result: GameResult) -> None:
-    console.rule("result")
+def _print_outcome(console: Any, result: GameResult, lang: str = "en") -> None:
+    tr = Translator(lang)
+    console.rule(_loc(lang, "result", "对局结果"))
     rows = []
-    for p in result.players:  # type: ignore[attr-defined]
-        status = "survived" if p.alive else f"died day {p.death_day}"
-        rows.append(f"  P{p.id} {p.name:<8} {p.role.value:<9} — {status}")
+    for p in result.players:
+        status = (
+            _loc(lang, "survived", "存活")
+            if p.alive
+            else _loc(lang, f"died day {p.death_day}", f"第 {p.death_day} 天死亡")
+        )
+        rows.append(f"  P{p.id} {p.name:<8} {tr.role_name(p.role):<9} — {status}")
     body = "\n".join(rows)
-    winner = result.winner.label  # type: ignore[attr-defined]
+    title = _loc(
+        lang,
+        f"{tr.faction_label(result.winner)} win",
+        f"{tr.faction_label(result.winner)}获胜",
+    )
     if _RICH:
-        console.print(Panel(body, title=f"{winner} win", border_style="green"))
+        console.print(Panel(body, title=title, border_style="green"))
     else:
-        console.print(f"{winner} win\n{body}")
+        console.print(f"{title}\n{body}")
 
 
 def _print_report(console: Any, report: ArenaReport) -> None:
@@ -430,6 +451,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--transcript", metavar="PATH", default=None,
         help="write a JSON transcript of the game to PATH",
     )
+    sim.add_argument(
+        "--lang", choices=LANGUAGES, default="en",
+        help="game language: en (English) or zh (中文)",
+    )
     sim.set_defaults(func=cmd_simulate)
 
     arena = sub.add_parser("arena", help="benchmark agents over many games")
@@ -451,6 +476,10 @@ def build_parser() -> argparse.ArgumentParser:
     play.add_argument(
         "--copilot-llm", action="store_true",
         help="add an LLM second opinion (needs DEEPWOLF_* env vars)",
+    )
+    play.add_argument(
+        "--lang", choices=LANGUAGES, default="en",
+        help="game language: en (English) or zh (中文)",
     )
     play.set_defaults(func=cmd_play)
 

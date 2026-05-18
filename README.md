@@ -6,6 +6,8 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
+**English** | [中文](README.zh-CN.md)
+
 Werewolf (a.k.a. Mafia) is a game of **hidden information, persuasion and
 deception** — exactly the things that are hard to measure in a language model
 and hard to do well as a human. `deepwolf` turns the game into two tools:
@@ -34,6 +36,8 @@ to a human as a copilot.
 - ♟️ **A strict, seeded rules engine.** Night/day cycle with Werewolf, Seer,
   Doctor, Hunter and Witch abilities. Every game is reproducible from a seed; an
   illegal or hallucinated agent move can never corrupt a game.
+- 🌏 **Bilingual.** The whole game — event log, roles, agent speech, the CLI —
+  runs in English or Simplified Chinese. Just add `--lang zh`.
 - 🔌 **Vendor-neutral LLMs.** Any OpenAI-compatible endpoint — OpenAI,
   DeepSeek, Xiaomi MiMo, Groq, OpenRouter, a local server. Change one env var.
 - 🧪 **Offline by default.** A deterministic `MockProvider` plays full games
@@ -57,6 +61,7 @@ Watch a full game play itself — **no API key needed**:
 
 ```bash
 deepwolf simulate --players 7 --seed 1
+deepwolf simulate --players 7 --seed 1 --lang zh                # play in Chinese
 deepwolf simulate --players 7 --seed 1 --transcript game.json   # + JSON record
 ```
 

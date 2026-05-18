@@ -14,6 +14,11 @@ All notable changes to this project are documented here. The format follows
 - **Provider guide** ([#5](https://github.com/JuneQQQ/deepwolf/issues/5)) —
   `docs/providers.md` explains how to connect any OpenAI-compatible endpoint,
   including local servers, with a troubleshooting table.
+- **Chinese language support** — a new `deepwolf.i18n` module localises the
+  whole game (event log, roles, factions, agent prompts, CLI output) into
+  Simplified Chinese. Choose the language with `GameConfig(lang=...)` or the
+  `--lang {en,zh}` CLI flag. English output is byte-for-byte unchanged. Adds a
+  Chinese README (`README.zh-CN.md`).
 
 ### Planned
 - Additional roles: Cupid.
