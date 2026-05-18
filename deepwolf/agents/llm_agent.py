@@ -60,6 +60,21 @@ class LLMAgent(Agent):
         candidates = view.others_alive() or list(view.living_ids)
         return self._decide(view, T.KIND_SHOOT, candidates)
 
+    def witch_turn(
+        self, view: PlayerView, victim: int | None, can_heal: bool, can_poison: bool
+    ) -> tuple[bool, int | None]:
+        messages = [
+            {"role": "system", "content": T.system_message(view)},
+            {"role": "user", "content": T.witch_request(view, victim, can_heal, can_poison)},
+        ]
+        data = _parse_json(self._call(messages))
+        if not data:
+            return (False, None)
+        heal = bool(data.get("heal")) and can_heal
+        poison = data.get("poison")
+        poison_target = poison if (isinstance(poison, int) and can_poison) else None
+        return (heal, poison_target)
+
     # ------------------------------------------------------------- internals
     def _decide(self, view: PlayerView, kind: str, candidates: list[int]) -> int:
         messages = self._messages(view, kind, candidates)

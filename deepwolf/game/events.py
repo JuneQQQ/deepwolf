@@ -20,6 +20,8 @@ class EventType(str, Enum):
     WEREWOLF_TARGET = "werewolf_target"  # private: a wolf names a victim
     SEER_RESULT = "seer_result"        # private: the seer's inspection
     DOCTOR_PROTECT = "doctor_protect"  # private: the doctor's choice
+    WITCH_NIGHT_INFO = "witch_night_info"  # private: who the wolves attacked
+    WITCH_POTION = "witch_potion"      # private: a potion the witch used
     DAY_BREAKS = "day_breaks"          # public
     DEATH_ANNOUNCED = "death_announced"  # public
     QUIET_NIGHT = "quiet_night"        # public: nobody died

@@ -33,6 +33,15 @@ class RandomAgent(Agent):
     def speak(self, view: PlayerView) -> str:
         return view.rng.choice(_FILLER)
 
+    def witch_turn(
+        self, view: PlayerView, victim: int | None, can_heal: bool, can_poison: bool
+    ) -> tuple[bool, int | None]:
+        heal = can_heal and view.rng.random() < 0.5
+        poison: int | None = None
+        if can_poison and view.rng.random() < 0.3 and view.others_alive():
+            poison = view.rng.choice(view.others_alive())
+        return (heal, poison)
+
     @staticmethod
     def _pool(view: PlayerView) -> list[int]:
         return view.others_alive() or list(view.living_ids)

@@ -18,6 +18,7 @@ KIND_PROTECT = "protect"
 KIND_VOTE = "vote"
 KIND_SPEAK = "speak"
 KIND_SHOOT = "shoot"
+KIND_WITCH = "witch"
 
 _ASK = {
     KIND_KILL: "It is night. As a werewolf, choose one living player for the "
@@ -64,6 +65,32 @@ def decision_request(view: PlayerView, kind: str, candidates: list[int]) -> str:
         _candidates_line(view, candidates),
         _format_instructions(kind),
         f"[[ACTION kind={kind} candidates={','.join(map(str, candidates))}]]",
+    ]
+    return "\n\n".join(p for p in parts if p)
+
+
+def witch_request(
+    view: PlayerView, victim: int | None, can_heal: bool, can_poison: bool
+) -> str:
+    """The user message asking the Witch which potions to use tonight."""
+    options = []
+    if can_heal:
+        who = f"{view.name(victim)} (P{victim})" if victim is not None else "the victim"
+        options.append(f"  - HEALING potion: save {who} from the werewolves.")
+    if can_poison:
+        options.append("  - POISON potion: kill any one living player.")
+    living = [p.id for p in view.players if p.alive]
+    parts = [
+        f"=== Day {view.day} — night (the Witch acts) ===",
+        _players_block(view),
+        _secret_block(view),
+        _log_block(view),
+        "You are the Witch. Potions still available to you:\n" + "\n".join(options),
+        "Decide whether to use each — you may use both, one, or neither. Spend "
+        "potions wisely; you only get one of each for the whole game.",
+        'Respond with ONLY a JSON object: {"heal": true|false, "poison": '
+        '<player id|null>}. Use "poison" only to name someone you want dead.',
+        f"[[ACTION kind={KIND_WITCH} candidates={','.join(map(str, living))}]]",
     ]
     return "\n\n".join(p for p in parts if p)
 
