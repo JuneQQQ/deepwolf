@@ -301,6 +301,36 @@ def cmd_leaderboard(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_replay(args: argparse.Namespace) -> int:
+    import time
+
+    from deepwolf.game.transcript import load
+
+    console = _console()
+    transcript = load(args.path)
+
+    console.rule(f"deepwolf replay — {len(transcript.players)} players, {transcript.days} days")
+
+    delay = args.delay
+    for event in transcript.events:
+        _print_event(console, event)
+        if delay > 0:
+            time.sleep(delay)
+
+    console.rule("result")
+    rows = []
+    for p in transcript.players:
+        status = "survived" if p["alive"] else f"died day {p['death_day']}"
+        rows.append(f"  P{p['id']} {p['name']:<8} {p['role']:<9} — {status}")
+    body = "\n".join(rows)
+    title = f"{transcript.winner_label} win"
+    if _RICH:
+        console.print(Panel(body, title=title, border_style="green"))
+    else:
+        console.print(f"{title}\n{body}")
+    return 0
+
+
 # -------------------------------------------------------------- rendering
 _STYLE = {
     EventType.GAME_START: "bold cyan",
@@ -492,6 +522,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="also write the ranking as a Markdown table",
     )
     board.set_defaults(func=cmd_leaderboard)
+
+    replay = sub.add_parser("replay", help="replay a saved transcript")
+    replay.add_argument("path", help="path to a transcript JSON file")
+    replay.add_argument(
+        "--delay", type=float, default=0.0,
+        help="seconds to pause between events (default: 0, instant)",
+    )
+    replay.set_defaults(func=cmd_replay)
     return parser
 
 

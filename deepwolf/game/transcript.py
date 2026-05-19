@@ -14,10 +14,46 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from deepwolf.game.events import Event
+from deepwolf.game.events import Event, EventType
+from deepwolf.game.roles import Faction
 from deepwolf.game.state import GameResult
 
 SCHEMA = "deepwolf.transcript/v1"
+
+
+class Transcript:
+    """A loaded transcript ready for replay."""
+
+    def __init__(self, data: dict) -> None:
+        self.schema: str = data.get("schema", "")
+        self.winner: str = data["winner"]
+        self.days: int = data["days"]
+        self.players: list[dict] = data["players"]
+        self.events: list[Event] = [_event_from_json(e) for e in data["events"]]
+
+    @property
+    def winner_label(self) -> str:
+        return "the Village" if self.winner == Faction.VILLAGE.value else "the Werewolves"
+
+
+def _event_from_json(raw: dict) -> Event:
+    """Reconstruct an :class:`Event` from a transcript dict entry."""
+    return Event(
+        type=EventType(raw["type"]),
+        day=raw["day"],
+        phase=raw["phase"],
+        text=raw["text"],
+        actor=raw.get("actor"),
+        target=raw.get("target"),
+        public=raw.get("public", True),
+        visible_to=frozenset(raw.get("visible_to", ())),
+        data=raw.get("data", {}),
+    )
+
+
+def load(path: str | Path) -> Transcript:
+    """Read a transcript JSON file and return a :class:`Transcript`."""
+    return Transcript(json.loads(Path(path).read_text(encoding="utf-8")))
 
 
 def event_to_json(event: Event) -> dict:
