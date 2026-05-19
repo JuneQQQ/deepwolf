@@ -104,6 +104,12 @@ def test_calibration_bin_gap():
     assert abs(b.gap - 0.15) < 1e-9
 
 
+def test_reliability_diagram_surfaces_the_calibration_gap():
+    report = evaluate_copilot(n_players=7, n_games=6, base_seed=8)
+    assert "gap" in report.render().lower()
+    assert "Gap" in report.to_markdown()
+
+
 def test_cli_calibrate_command_runs():
     from deepwolf.cli import main
 
