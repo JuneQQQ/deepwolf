@@ -110,7 +110,8 @@ class CalibrationReport:
             bar = "#" * round(b.observed_rate * 20)
             lines.append(
                 f"    [{b.low:4.0%}-{b.high:4.0%}) predicted {b.mean_predicted:6.1%} "
-                f"-> observed {b.observed_rate:6.1%}  n={b.count:<5d} |{bar}"
+                f"-> observed {b.observed_rate:6.1%}  gap {b.gap:+6.1%}  "
+                f"n={b.count:<5d} |{bar}"
             )
         return "\n".join(lines)
 
@@ -127,13 +128,15 @@ class CalibrationReport:
             f"Resolution {self.resolution:.4f} · "
             f"Uncertainty {self.uncertainty:.4f}",
             "",
-            "| Predicted bin | Mean predicted | Observed werewolf rate | Count |",
-            "|---------------|---------------:|-----------------------:|------:|",
+            "| Predicted bin | Mean predicted | Observed werewolf rate | "
+            "Gap | Count |",
+            "|---------------|---------------:|-----------------------:|"
+            "----:|------:|",
         ]
         for b in self.bins:
             rows.append(
                 f"| {b.low:.0%}-{b.high:.0%} | {b.mean_predicted:.1%} | "
-                f"{b.observed_rate:.1%} | {b.count} |"
+                f"{b.observed_rate:.1%} | {b.gap:+.1%} | {b.count} |"
             )
         return "\n".join(rows)
 
@@ -152,6 +155,11 @@ def evaluate_copilot(
     Plays ``n_games`` seeded games (with ``agent_factory`` agents, random by
     default), collecting the copilot's suspicions from every surviving
     villager's viewpoint at each daybreak, and scores them.
+
+    Note: calibration is measured against games *played by* ``agent_factory``.
+    The copilot itself is always the heuristic advisor, but the games it reads
+    are only as realistic as the agents playing them — a copilot's calibration
+    against random agents may differ from its calibration against strong ones.
     """
     if n_games < 1:
         raise ValueError("n_games must be at least 1")
@@ -164,10 +172,7 @@ def evaluate_copilot(
         if progress is not None:
             progress(i + 1, n_games)
 
-    report = _score(pairs, n_bins)
-    report.n_games = n_games
-    report.n_players = n_players
-    return report
+    return _score(pairs, n_bins, n_games=n_games, n_players=n_players)
 
 
 def _collect_game(
@@ -200,11 +205,13 @@ def _collect_game(
     return pairs
 
 
-def _score(pairs: list[Prediction], n_bins: int) -> CalibrationReport:
+def _score(
+    pairs: list[Prediction], n_bins: int, *, n_games: int, n_players: int
+) -> CalibrationReport:
     """Turn raw (prediction, outcome) pairs into a full calibration report."""
     n = len(pairs)
     if n == 0:
-        return CalibrationReport()
+        return CalibrationReport(n_games=n_games, n_players=n_players)
 
     base_rate = sum(outcome for _, outcome in pairs) / n
     brier = sum((pred - outcome) ** 2 for pred, outcome in pairs) / n
@@ -240,6 +247,8 @@ def _score(pairs: list[Prediction], n_bins: int) -> CalibrationReport:
         ))
 
     return CalibrationReport(
+        n_games=n_games,
+        n_players=n_players,
         n_predictions=n,
         base_rate=base_rate,
         brier_score=brier,

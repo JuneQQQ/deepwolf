@@ -464,12 +464,14 @@ def _print_calibration(console: Any, report: Any) -> None:
     diagram.add_column("predicted bin")
     diagram.add_column("mean predicted", justify="right")
     diagram.add_column("observed werewolf rate", justify="right")
+    diagram.add_column("calibration gap", justify="right")
     diagram.add_column("count", justify="right")
     for b in report.bins:
         diagram.add_row(
             f"{b.low:.0%}-{b.high:.0%}",
             f"{b.mean_predicted:.1%}",
             f"{b.observed_rate:.1%}",
+            f"{b.gap:+.1%}",
             str(b.count),
         )
     console.print(diagram)
