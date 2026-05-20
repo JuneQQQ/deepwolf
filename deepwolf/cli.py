@@ -228,7 +228,7 @@ def cmd_arena(args: argparse.Namespace) -> int:
         end = "\n" if done == total else "\r"
         print(f"  running games... {done}/{total}", end=end, flush=True)
 
-    report = arena.run(progress=progress)
+    report = arena.run(progress=progress, max_workers=args.workers)
     _print_report(console, report)
     return 0
 
@@ -304,7 +304,7 @@ def cmd_leaderboard(args: argparse.Namespace) -> int:
         end = "\n" if done == total else "\r"
         print(f"  evaluating competitors... {done}/{total}", end=end, flush=True)
 
-    report = board.run(progress=progress)
+    report = board.run(progress=progress, max_workers=args.workers)
     _print_leaderboard(console, report)
     if args.markdown:
         from pathlib import Path
@@ -539,6 +539,10 @@ def build_parser() -> argparse.ArgumentParser:
     arena.add_argument("--model-seed", type=int, default=0)
     arena.add_argument("--villagers", choices=AGENT_KINDS, default="mock")
     arena.add_argument("--werewolves", choices=AGENT_KINDS, default="mock")
+    arena.add_argument(
+        "--workers", type=int, default=1,
+        help="run games in parallel on N threads (default 1 = sequential)",
+    )
     arena.set_defaults(func=cmd_arena)
 
     play = sub.add_parser("play", help="play a game yourself with the copilot")
@@ -572,6 +576,10 @@ def build_parser() -> argparse.ArgumentParser:
     board.add_argument(
         "--markdown", metavar="PATH", default=None,
         help="also write the ranking as a Markdown table",
+    )
+    board.add_argument(
+        "--workers", type=int, default=1,
+        help="run games in parallel on N threads (default 1 = sequential)",
     )
     board.set_defaults(func=cmd_leaderboard)
 
