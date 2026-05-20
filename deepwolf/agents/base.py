@@ -49,6 +49,18 @@ class Agent(ABC):
         pool = view.others_alive() or list(view.living_ids)
         return view.rng.choice(pool)
 
+    def last_reasoning(self) -> str | None:
+        """Return the reasoning behind this agent's most recent decision.
+
+        deepwolf's "explainable" thesis applies to agents too: a self-play
+        transcript is only useful for post-mortem analysis if each decision
+        carries the *why*. The default returns ``None`` (a baseline agent has
+        no reasoning to share); :class:`~deepwolf.agents.llm_agent.LLMAgent`
+        overrides it to expose the natural-language justification the model
+        produced.
+        """
+        return None
+
     def bid(self, view: PlayerView) -> tuple[int, str]:
         """Return ``(priority, reason)`` — a bid for the discussion floor.
 

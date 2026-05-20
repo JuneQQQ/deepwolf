@@ -31,6 +31,7 @@ class EventType(str, Enum):
     LYNCH = "lynch"                    # public
     NO_LYNCH = "no_lynch"              # public
     HUNTER_SHOT = "hunter_shot"        # public: a dying Hunter's revenge
+    AGENT_REASONING = "agent_reasoning"  # private: an agent's stated reason for its decision
     GAME_OVER = "game_over"            # public
 
 

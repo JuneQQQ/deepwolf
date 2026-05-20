@@ -6,6 +6,19 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Agent reasoning trace** — `LLMAgent`'s per-decision reasoning is now
+  surfaced as a private `AGENT_REASONING` event after each choice (kill,
+  inspect, protect, vote, shoot). The transcript JSON carries it, so a saved
+  game now records *why* each LLM-driven decision was made, not just *what*
+  was decided. Visibility is restricted to the actor — other agents' views are
+  unchanged, and existing baseline agents (which keep no trace) emit nothing.
+  Motivated by the WOLF benchmark's principle that explainable LLM
+  social-deduction evaluation needs structured per-agent reasoning logs
+  ([arXiv:2512.09187](https://arxiv.org/abs/2512.09187)) — deepwolf threads it
+  into the event log proper, rather than an out-of-band scratchpad, so the
+  reasoning is rendered and replayed by the same machinery as everything else.
+
 ### Planned
 - Additional roles: Cupid.
 

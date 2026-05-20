@@ -35,6 +35,12 @@ class LLMAgent(Agent):
         #: (day, kind, choice, reasoning) — useful for transcripts and review
         self.reasoning_log: list[tuple[int, str, int, str]] = []
 
+    def last_reasoning(self) -> str | None:
+        if not self.reasoning_log:
+            return None
+        reasoning = self.reasoning_log[-1][3].strip()
+        return reasoning or None
+
     def night_action(self, view: PlayerView) -> int:
         kind = _NIGHT_KIND[view.me_role]
         candidates = (

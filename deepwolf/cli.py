@@ -346,6 +346,7 @@ _STYLE = {
     EventType.HUNTER_SHOT: "bold red",
     EventType.QUIET_NIGHT: "green",
     EventType.SPEAK_BID: "dim cyan",
+    EventType.AGENT_REASONING: "dim italic",
     EventType.STATEMENT: "white",
     EventType.GAME_OVER: "bold green",
 }
