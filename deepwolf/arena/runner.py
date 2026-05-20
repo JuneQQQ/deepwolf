@@ -4,11 +4,19 @@ The arena runs many games under identical rules and aggregates the outcomes
 into an :class:`ArenaReport`. It is how deepwolf answers questions like *"do
 LLM werewolves beat random villagers?"* or *"which model survives longest as
 the seer?"* — every game is seeded, so a benchmark is reproducible.
+
+Games are independent — each has its own seeded ``GameState`` — so the runner
+can play them in parallel. Real-LLM benchmarks are IO-bound (waiting on the
+provider) and scale almost linearly with worker count; the default stays
+sequential for predictable behaviour and to keep shared-resource agents like
+the deterministic :class:`~deepwolf.llm.mock.MockProvider` safe.
 """
 
 from __future__ import annotations
 
+import threading
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 
 from deepwolf.agents.base import Agent
@@ -93,26 +101,73 @@ class Arena:
         self.base_seed = base_seed
         self.discussion_rounds = discussion_rounds
 
-    def run(self, progress: ProgressHook | None = None) -> ArenaReport:
+    def run(
+        self,
+        progress: ProgressHook | None = None,
+        *,
+        max_workers: int = 1,
+    ) -> ArenaReport:
+        """Play every seeded game and return the aggregated report.
+
+        With ``max_workers == 1`` (the default) games run sequentially, exactly
+        as before. With a higher value, independent games are dispatched onto a
+        thread pool — ideal for real-LLM benchmarks where almost all of each
+        game's wall-clock is spent waiting on the provider. Aggregation is
+        commutative, so the report is bit-identical to the sequential run.
+
+        When running in parallel, the ``agent_factory`` must be safe to call
+        from multiple threads. Factories that return fresh agents on every call
+        (the usual pattern) are safe automatically. Agents that share mutable
+        state — notably :class:`~deepwolf.llm.mock.MockProvider`, whose RNG is
+        not thread-safe — should be instantiated *per game* by the factory in
+        parallel mode.
+        """
+        if max_workers <= 1:
+            return self._run_sequential(progress)
+        return self._run_parallel(progress, max_workers)
+
+    # ------------------------------------------------------------- internals
+    def _run_sequential(self, progress: ProgressHook | None) -> ArenaReport:
         report = ArenaReport(n_games=self.n_games, n_players=self.n_players)
         for i in range(self.n_games):
-            config = GameConfig.standard(
-                self.n_players,
-                seed=self.base_seed + i,
-                discussion_rounds=self.discussion_rounds,
-            )
-            seats: dict[int, Agent] = {}
-
-            def recording_factory(pid: int, role: Role, _seats=seats) -> Agent:
-                agent = self.agent_factory(pid, role)
-                _seats[pid] = agent
-                return agent
-
-            result = GameEngine(config, recording_factory).run()
+            result, seats = self._play(i)
             self._record(report, result, seats)
             if progress is not None:
                 progress(i + 1, self.n_games)
         return report
+
+    def _run_parallel(self, progress: ProgressHook | None, max_workers: int) -> ArenaReport:
+        report = ArenaReport(n_games=self.n_games, n_players=self.n_players)
+        lock = threading.Lock()
+        completed = 0
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            futures = [pool.submit(self._play, i) for i in range(self.n_games)]
+            for future in as_completed(futures):
+                result, seats = future.result()
+                with lock:
+                    self._record(report, result, seats)
+                    completed += 1
+                    done = completed
+                if progress is not None:
+                    progress(done, self.n_games)
+        return report
+
+    def _play(self, index: int) -> tuple[object, dict[int, Agent]]:
+        """Play one seeded game and return (result, seats)."""
+        config = GameConfig.standard(
+            self.n_players,
+            seed=self.base_seed + index,
+            discussion_rounds=self.discussion_rounds,
+        )
+        seats: dict[int, Agent] = {}
+
+        def recording_factory(pid: int, role: Role, _seats=seats) -> Agent:
+            agent = self.agent_factory(pid, role)
+            _seats[pid] = agent
+            return agent
+
+        result = GameEngine(config, recording_factory).run()
+        return result, seats
 
     @staticmethod
     def _record(report: ArenaReport, result: object, seats: dict[int, Agent]) -> None:

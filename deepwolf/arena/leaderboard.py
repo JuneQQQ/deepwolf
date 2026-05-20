@@ -108,11 +108,16 @@ class Leaderboard:
         self.base_seed = base_seed
         self.discussion_rounds = discussion_rounds
 
-    def run(self, progress: ProgressHook | None = None) -> LeaderboardReport:
+    def run(
+        self,
+        progress: ProgressHook | None = None,
+        *,
+        max_workers: int = 1,
+    ) -> LeaderboardReport:
         entries: list[LeaderboardEntry] = []
         for done, (name, builder) in enumerate(self.competitors.items(), 1):
-            as_wolf = self._arena(builder, self.reference).run()
-            as_village = self._arena(self.reference, builder).run()
+            as_wolf = self._arena(builder, self.reference).run(max_workers=max_workers)
+            as_village = self._arena(self.reference, builder).run(max_workers=max_workers)
             entries.append(LeaderboardEntry(
                 name=name,
                 games_per_side=self.n_games,

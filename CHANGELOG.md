@@ -7,6 +7,12 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Parallel arena** — `Arena.run(max_workers=N)` and
+  `Leaderboard.run(max_workers=N)` dispatch independent games onto a thread
+  pool; `--workers N` exposes it on the `arena` and `leaderboard` CLI commands.
+  Default stays sequential. Real-LLM benchmarks are IO-dominated (waiting on
+  the provider) and scale almost linearly with worker count; aggregation is
+  commutative so the report is bit-identical to the sequential run.
 - **Agent reasoning trace** — `LLMAgent`'s per-decision reasoning is now
   surfaced as a private `AGENT_REASONING` event after each choice (kill,
   inspect, protect, vote, shoot). The transcript JSON carries it, so a saved
