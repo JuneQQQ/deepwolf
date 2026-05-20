@@ -352,6 +352,7 @@ class GameEngine:
         legal = [pid for pid in s.living_ids() if pid != player_id]
         view = build_view(s, player_id, Phase.DAY_VOTE)
         choice = self._validate(self.agents[player_id].vote, view, legal)
+        self._emit_reasoning(player_id, "vote")
         self._emit(Event(
             EventType.VOTE_CAST, s.day, "day",
             self.tr.t("vote_cast", voter=self._who(player_id), target=self._who(choice)),
@@ -366,7 +367,38 @@ class GameEngine:
 
     def _ask_target(self, actor: Player, action: str, legal: list[int]) -> int:
         view = build_view(self.state, actor.id, Phase.NIGHT)
-        return self._validate(self.agents[actor.id].night_action, view, legal)
+        choice = self._validate(self.agents[actor.id].night_action, view, legal)
+        self._emit_reasoning(actor.id, action)
+        return choice
+
+    def _emit_reasoning(self, player_id: int, decision: str) -> None:
+        """Surface an agent's stated reasoning for its latest decision.
+
+        Private to the actor (visible_to = {player_id}), so other agents'
+        views are unchanged. The point is the post-game transcript: a saved
+        game now records *why* each LLM-driven decision was made, not just
+        *what* was decided. Agents that don't keep a reasoning trace return
+        ``None`` from :meth:`Agent.last_reasoning` and nothing is emitted.
+        """
+        raw = self.agents[player_id].last_reasoning()
+        reasoning = (raw or "").strip()
+        if not reasoning:
+            return
+        self._emit(Event(
+            EventType.AGENT_REASONING,
+            self.state.day,
+            self.state.phase.value,
+            self.tr.t(
+                "agent_reasoning",
+                who=self._who(player_id),
+                decision=decision,
+                reasoning=reasoning,
+            ),
+            actor=player_id,
+            public=False,
+            visible_to=frozenset({player_id}),
+            data={"decision": decision, "reasoning": reasoning},
+        ))
 
     def _validate(
         self,
@@ -419,6 +451,7 @@ class GameEngine:
             choice = -1
         if choice not in targets:
             choice = s.rng.choice(targets)
+        self._emit_reasoning(player_id, "shoot")
         self._kill(choice, "shot by the dying Hunter")
         role_name, data = self._reveal(choice)
         if role_name is not None:

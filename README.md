@@ -40,6 +40,9 @@ to a human as a copilot.
   runs in English or Simplified Chinese. Just add `--lang zh`.
 - 🗣️ **Adaptive discussion.** Optionally let agents *bid* for the floor each
   round (`--bidding`) — bids are public, so wanting to talk is itself a tell.
+- 🧠 **Reasoning trace.** Every LLM-driven decision (kill, inspect, vote, ...)
+  carries the model's stated *why* into the event log and the saved JSON, so a
+  post-game replay can show not just what happened but the reasoning behind it.
 - 🔌 **Vendor-neutral LLMs.** Any OpenAI-compatible endpoint — OpenAI,
   DeepSeek, Xiaomi MiMo, Groq, OpenRouter, a local server. Change one env var.
 - 🧪 **Offline by default.** A deterministic `MockProvider` plays full games

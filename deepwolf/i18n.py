@@ -127,6 +127,10 @@ GAME_MESSAGES: dict[str, dict[str, str]] = {
         "en": "The game is over after {day} day(s). {faction} win.",
         "zh": "对局在第 {day} 天结束。{faction}获胜。",
     },
+    "agent_reasoning": {
+        "en": "{who} reasoning ({decision}): {reasoning}",
+        "zh": "{who} 推理（{decision}）：{reasoning}",
+    },
     "game_over_headcount": {
         "en": "The game reaches the day limit. {faction} win on headcount.",
         "zh": "对局达到天数上限，按存活人数{faction}获胜。",
